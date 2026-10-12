@@ -201,19 +201,37 @@
       transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    /* RESPONSIVE DESKTOP LAYOUT (SIDEBAR + MAIN CONTENT) */
+    /* RESPONSIVE DESKTOP & MOBILE LAYOUT */
     @media (min-width: 768px) {
       #app-container {
         max-width: 100% !important;
+        width: 100% !important;
+        height: 100vh !important;
         flex-direction: row !important;
-        border-radius: 0;
-        box-shadow: none;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+      }
+      #desktop-sidebar {
+        display: flex !important;
+      }
+      #mobile-bottom-nav {
+        display: none !important;
+      }
+      #app-topbar {
+        display: flex !important;
       }
     }
     @media (max-width: 767px) {
       #app-container {
         max-width: 480px;
         width: 100%;
+        flex-direction: column !important;
+      }
+      #desktop-sidebar {
+        display: none !important;
+      }
+      #mobile-bottom-nav {
+        display: flex !important;
       }
     }
 
@@ -873,7 +891,7 @@
     </div>
 
         <!-- ================= DESKTOP SIDEBAR NAVIGATION (SLEEK SAAS, >= 768px) ================= -->
-    <aside id="desktop-sidebar" class="hidden md:flex flex-col w-64 lg:w-72 bg-[#001c24]/95 backdrop-blur-2xl border-r border-teal-500/20 text-white shrink-0 z-30 select-none justify-between h-full p-4 overflow-y-auto no-scrollbar">
+    <aside id="desktop-sidebar" class="flex-col w-64 lg:w-72 bg-[#001c24]/95 backdrop-blur-2xl border-r border-teal-500/20 text-white shrink-0 z-30 select-none justify-between h-full p-4 overflow-y-auto no-scrollbar">
       <div class="space-y-6">
         <!-- Logo & Header Brand -->
         <div class="flex items-center space-x-3 px-2 pt-1">
@@ -946,7 +964,7 @@
     <div id="main-content" class="flex-1 flex flex-col h-full overflow-hidden relative">
       
       <!-- FLOATING FROSTED GLASS TOPBAR (NO HARD BORDERS) -->
-      <header class="bg-white/10 backdrop-blur-xl text-white safe-top-padding px-4 pb-3 flex items-center justify-between sticky top-0 z-30 border-0 shadow-lg shadow-black/10">
+      <header id="app-topbar" class="bg-white/10 backdrop-blur-xl text-white safe-top-padding px-4 pb-3 flex items-center justify-between sticky top-0 z-30 border-0 shadow-lg shadow-black/10">
         <div class="flex items-center space-x-2.5">
           <button id="btn-topbar-back" onclick="navTo('dashboard')" class="hidden !important items-center justify-center px-3.5 py-1.5 rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 text-white font-bold text-xs active:scale-95 transition-all shadow-xs backdrop-blur-md">
             Kembali
@@ -968,117 +986,108 @@
       <main class="flex-1 overflow-y-auto overscroll-contain touch-scroll p-4 space-y-4 pb-28">
 
         <!-- ================= PAGE 1: DASHBOARD ================= -->
-        <section id="page-dashboard" class="page space-y-4">
-          <!-- Hero Card -->
-          <div class="bg-white/15 backdrop-blur-md rounded-3xl p-5 text-white shadow-xl shadow-black/10 relative overflow-hidden border border-white/15">
-            <div class="relative z-10">
-              <span class="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider text-[#fde047]">KBM Terpadu</span>
-              <h2 class="text-xl font-black mt-2.5 text-white">Selamat Datang</h2>
-              
-              <!-- USER PROFILE BADGE UNDER SELAMAT DATANG -->
-              <div onclick="navTo('profil')" class="inline-flex items-center space-x-2.5 bg-white/20 hover:bg-white/30 active:bg-white/35 px-3.5 py-1.5 rounded-full cursor-pointer active:scale-95 transition-all shadow-md backdrop-blur-xl border border-white/25 mt-2 mb-1.5">
-                <img id="user-avatar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 24 24' fill='%23FDE047'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>" class="w-6 h-6 rounded-full object-cover ring-2 ring-[#fde047]/60">
-                <span id="user-display-name" class="text-xs font-extrabold text-white max-w-[200px] truncate tracking-wide">Guru</span>
-                <span class="text-[10px] font-extrabold bg-[#facc15] text-slate-900 px-2 py-0.5 rounded-full ml-1 shadow-xs">Profil</span>
+        <section id="page-dashboard" class="page space-y-2.5 pt-0">
+          <!-- Compact Hero Header Langsung dari Atas -->
+          <div class="bg-white/15 backdrop-blur-md rounded-3xl p-3.5 sm:p-4 text-white shadow-xl shadow-black/10 relative overflow-hidden border border-white/15">
+            <div class="relative z-10 flex items-center justify-between">
+              <!-- Sisi Kiri: Selamat Datang & Nama Guru -->
+              <div class="min-w-0 pr-2">
+                <span class="text-[9px] font-extrabold uppercase tracking-wider text-[#fde047]">Selamat Datang,</span>
+                <h2 id="user-display-name" class="text-sm sm:text-base font-black text-white truncate tracking-wide mt-0.5">Guru</h2>
+                <p class="text-[9px] text-white/70 font-medium">MAN 1 Majalengka</p>
               </div>
 
-              <p class="text-xs text-white/80 mt-1 font-medium">Administrasi & Jurnal Aktivitas Mengajar Guru.</p>
-              
-              <button onclick="openLkhFromDashboard()" class="mt-4 bg-[#facc15] hover:bg-[#eab308] active:bg-[#eab308] text-slate-900 font-extrabold text-xs px-5 py-3 rounded-full shadow-lg shadow-black/20 active:scale-95 transition-all flex items-center space-x-2">
-                <svg class="w-4 h-4 text-slate-900" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-                <span>Isi Jurnal LKH (Conversational)</span>
-              </button>
+              <!-- Sisi Kanan: Foto Guru (Klik menuju Profil) -->
+              <div onclick="navTo('profil')" class="cursor-pointer active:scale-95 transition-all shrink-0 relative" title="Buka Profil Guru">
+                <img id="user-avatar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 24 24' fill='%23FDE047'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>" class="w-11 h-11 rounded-full object-cover ring-2 ring-[#fde047] shadow-lg bg-white/20">
+                <div class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-[#00242c] flex items-center justify-center">
+                  <span class="w-1 h-1 bg-white rounded-full"></span>
+                </div>
+              </div>
             </div>
-            <div class="absolute -right-6 -bottom-6 w-36 h-36 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+
+            <!-- Tombol Cepat Isi LKH Tepat Di Bawahnya -->
+            <button onclick="openLkhFromDashboard()" class="w-full mt-2.5 bg-[#facc15] hover:bg-[#eab308] active:bg-[#eab308] text-slate-900 font-black text-xs py-2 px-3 rounded-2xl shadow-md active:scale-98 transition-all flex items-center justify-center space-x-1.5">
+              <svg class="w-3.5 h-3.5 text-slate-900" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+              <span>Isi Jurnal LKH</span>
+            </button>
+            <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
           </div>
 
-          <!-- Clean Surface Stats Grid (No Borders, Translucent Glass) -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3.5 text-white shadow-md shadow-black/5 flex items-center justify-between active:scale-98 transition-transform border border-white/10">
-              <div>
-                <p class="text-[10px] font-bold text-[#fde047] uppercase tracking-wider">Tahun Ajaran</p>
-                <p id="dash-ta" class="text-base font-black text-white mt-1">2026/2027</p>
-              </div>
-              <div class="w-10 h-10 rounded-2xl bg-white/20 text-white flex items-center justify-center">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
-              </div>
+          <!-- Peringkas Tampilan Tahun Ajaran, Kelas, Mapel, Siswa (Icon & Badge Ringkas dalam 1 Baris) -->
+          <div class="grid grid-cols-4 gap-1.5">
+            <!-- TA -->
+            <div class="bg-white/15 backdrop-blur-md rounded-2xl py-1.5 px-1 text-center text-white border border-white/10 shadow-xs flex flex-col items-center justify-center">
+              <svg class="w-3.5 h-3.5 text-[#fde047] mb-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
+              <p id="dash-ta" class="text-[9px] font-black leading-tight truncate w-full px-0.5">2026/2027</p>
+              <span class="text-[7px] font-bold text-white/60 uppercase">T.A</span>
             </div>
 
-            <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3.5 text-white shadow-md shadow-black/5 flex items-center justify-between active:scale-98 transition-transform border border-white/10">
-              <div>
-                <p class="text-[10px] font-bold text-[#fde047] uppercase tracking-wider">Kelas Ajar</p>
-                <p id="dash-kelas" class="text-base font-black text-white mt-1">0</p>
-              </div>
-              <div class="w-10 h-10 rounded-2xl bg-white/20 text-[#fde047] flex items-center justify-center">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/></svg>
-              </div>
+            <!-- Kelas Ajar -->
+            <div class="bg-white/15 backdrop-blur-md rounded-2xl py-1.5 px-1 text-center text-white border border-white/10 shadow-xs flex flex-col items-center justify-center">
+              <svg class="w-3.5 h-3.5 text-[#fde047] mb-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/></svg>
+              <p id="dash-kelas" class="text-[11px] font-black leading-tight">0</p>
+              <span class="text-[7px] font-bold text-white/60 uppercase">Kelas</span>
             </div>
 
-            <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3.5 text-white shadow-md shadow-black/5 flex items-center justify-between active:scale-98 transition-transform border border-white/10">
-              <div>
-                <p class="text-[10px] font-bold text-[#fde047] uppercase tracking-wider">Mata Pelajaran</p>
-                <p id="dash-mapel" class="text-base font-black text-white mt-1">0</p>
-              </div>
-              <div class="w-10 h-10 rounded-2xl bg-white/20 text-emerald-300 flex items-center justify-center">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
-              </div>
+            <!-- Mata Pelajaran -->
+            <div class="bg-white/15 backdrop-blur-md rounded-2xl py-1.5 px-1 text-center text-white border border-white/10 shadow-xs flex flex-col items-center justify-center">
+              <svg class="w-3.5 h-3.5 text-emerald-300 mb-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
+              <p id="dash-mapel" class="text-[11px] font-black leading-tight">0</p>
+              <span class="text-[7px] font-bold text-white/60 uppercase">Mapel</span>
             </div>
 
-            <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3.5 text-white shadow-md shadow-black/5 flex items-center justify-between active:scale-98 transition-transform border border-white/10">
-              <div>
-                <p class="text-[10px] font-bold text-[#fde047] uppercase tracking-wider">Total Siswa</p>
-                <p id="dash-siswa" class="text-base font-black text-white mt-1">0</p>
-              </div>
-              <div class="w-10 h-10 rounded-2xl bg-white/20 text-yellow-300 flex items-center justify-center">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 3s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-              </div>
+            <!-- Total Siswa -->
+            <div class="bg-white/15 backdrop-blur-md rounded-2xl py-1.5 px-1 text-center text-white border border-white/10 shadow-xs flex flex-col items-center justify-center">
+              <svg class="w-3.5 h-3.5 text-yellow-300 mb-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 3s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+              <p id="dash-siswa" class="text-[11px] font-black leading-tight">0</p>
+              <span class="text-[7px] font-bold text-white/60 uppercase">Siswa</span>
             </div>
           </div>
 
-          <!-- Modul Cards (Clean Translucent Box, Borderless) -->
-          <div class="bg-white/15 backdrop-blur-md rounded-3xl p-5 shadow-xl shadow-black/10 space-y-3.5 border border-white/15">
-            <h3 class="text-xs font-bold text-[#fde047] uppercase tracking-wider">Akses Cepat Modul</h3>
-            <div class="grid grid-cols-3 gap-2.5">
-              <button onclick="navTo('master-ajar')" class="p-3 bg-white/10 backdrop-blur-md hover:bg-white/20 active:scale-95 rounded-2xl text-center text-white transition-all flex flex-col items-center">
-                <div class="w-11 h-11 rounded-2xl bg-white/20 text-[#fde047] flex items-center justify-center mb-1.5 shadow-xs">
-                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
+          <!-- Modul Cards (6 Akses Cepat Tanpa Judul, Simetris 3x2, Ringkas) -->
+          <div class="bg-white/15 backdrop-blur-md rounded-3xl p-2.5 shadow-xl shadow-black/10 border border-white/15">
+            <div class="grid grid-cols-3 gap-2">
+              <button onclick="navTo('master-ajar')" class="p-2 bg-white/10 backdrop-blur-md hover:bg-white/20 active:scale-95 rounded-2xl text-center text-white transition-all flex flex-col items-center">
+                <div class="w-9 h-9 rounded-xl bg-white/20 text-[#fde047] flex items-center justify-center mb-1 shadow-xs">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
                 </div>
-                <span class="text-[11px] font-bold text-white">Master Ajar</span>
+                <span class="text-[10px] font-bold text-white">Master Ajar</span>
               </button>
               
-              <button onclick="navTo('master-siswa')" class="p-3 bg-white/10 backdrop-blur-md hover:bg-white/20 active:scale-95 rounded-2xl text-center text-white transition-all flex flex-col items-center">
-                <div class="w-11 h-11 rounded-2xl bg-white/20 text-[#fde047] flex items-center justify-center mb-1.5 shadow-xs">
-                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+              <button onclick="navTo('master-siswa')" class="p-2 bg-white/10 backdrop-blur-md hover:bg-white/20 active:scale-95 rounded-2xl text-center text-white transition-all flex flex-col items-center">
+                <div class="w-9 h-9 rounded-xl bg-white/20 text-[#fde047] flex items-center justify-center mb-1 shadow-xs">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
                 </div>
-                <span class="text-[11px] font-bold text-white">Data Siswa</span>
+                <span class="text-[10px] font-bold text-white">Data Siswa</span>
               </button>
               
-              <button onclick="navTo('absensi')" class="p-3 bg-white/10 backdrop-blur-md hover:bg-white/20 active:scale-95 rounded-2xl text-center text-white transition-all flex flex-col items-center">
-                <div class="w-11 h-11 rounded-2xl bg-white/20 text-[#fde047] flex items-center justify-center mb-1.5 shadow-xs">
-                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+              <button onclick="navTo('absensi')" class="p-2 bg-white/10 backdrop-blur-md hover:bg-white/20 active:scale-95 rounded-2xl text-center text-white transition-all flex flex-col items-center">
+                <div class="w-9 h-9 rounded-xl bg-white/20 text-[#fde047] flex items-center justify-center mb-1 shadow-xs">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
                 </div>
-                <span class="text-[11px] font-bold text-white">Absensi</span>
+                <span class="text-[10px] font-bold text-white">Absensi</span>
               </button>
               
-              <button onclick="navTo('nilai')" class="p-3 bg-white/10 backdrop-blur-md hover:bg-white/20 active:scale-95 rounded-2xl text-center text-white transition-all flex flex-col items-center">
-                <div class="w-11 h-11 rounded-2xl bg-white/20 text-[#fde047] flex items-center justify-center mb-1.5 shadow-xs">
-                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              <button onclick="navTo('nilai')" class="p-2 bg-white/10 backdrop-blur-md hover:bg-white/20 active:scale-95 rounded-2xl text-center text-white transition-all flex flex-col items-center">
+                <div class="w-9 h-9 rounded-xl bg-white/20 text-[#fde047] flex items-center justify-center mb-1 shadow-xs">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                 </div>
-                <span class="text-[11px] font-bold text-white">Penilaian</span>
+                <span class="text-[10px] font-bold text-white">Penilaian</span>
               </button>
               
-              <button onclick="navTo('lkh')" class="p-3 bg-white/10 backdrop-blur-md hover:bg-white/20 active:scale-95 rounded-2xl text-center text-white transition-all flex flex-col items-center">
-                <div class="w-11 h-11 rounded-2xl bg-white/20 text-[#fde047] flex items-center justify-center mb-1.5 shadow-xs">
-                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+              <button onclick="navTo('lkh')" class="p-2 bg-white/10 backdrop-blur-md hover:bg-white/20 active:scale-95 rounded-2xl text-center text-white transition-all flex flex-col items-center">
+                <div class="w-9 h-9 rounded-xl bg-white/20 text-[#fde047] flex items-center justify-center mb-1 shadow-xs">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
                 </div>
-                <span class="text-[11px] font-bold text-white">Jurnal LKH</span>
+                <span class="text-[10px] font-bold text-white">Jurnal LKH</span>
               </button>
               
-              <button onclick="navTo('laporan')" class="p-3 bg-white/10 backdrop-blur-md hover:bg-white/20 active:scale-95 rounded-2xl text-center text-white transition-all flex flex-col items-center">
-                <div class="w-11 h-11 rounded-2xl bg-white/20 text-[#fde047] flex items-center justify-center mb-1.5 shadow-xs">
-                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+              <button onclick="navTo('laporan')" class="p-2 bg-white/10 backdrop-blur-md hover:bg-white/20 active:scale-95 rounded-2xl text-center text-white transition-all flex flex-col items-center">
+                <div class="w-9 h-9 rounded-xl bg-white/20 text-[#fde047] flex items-center justify-center mb-1 shadow-xs">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
                 </div>
-                <span class="text-[11px] font-bold text-white">Export Laporan</span>
+                <span class="text-[10px] font-bold text-white">Laporan</span>
               </button>
             </div>
           </div>
@@ -1840,7 +1849,7 @@
       </div>
 
       <!-- ================= FLOATING FROSTED GLASS BOTTOM NAVIGATION ================= -->
-      <nav id="mobile-bottom-nav" class="fixed bottom-3 left-3 right-3 max-w-[456px] mx-auto z-40 bg-[#00242c]/95 backdrop-blur-2xl rounded-3xl border border-teal-500/25 shadow-2xl px-2 py-1.5 flex md:hidden justify-around items-center">
+      <nav id="mobile-bottom-nav" class="fixed bottom-3 left-3 right-3 max-w-[456px] mx-auto z-40 bg-[#00242c]/95 backdrop-blur-2xl rounded-3xl border border-teal-500/25 shadow-2xl px-2 py-1.5 flex justify-around items-center">
         
         <button onclick="navTo('dashboard')" id="nav-btn-dashboard" class="nav-item active flex flex-col items-center justify-center w-14 py-1 active:scale-95 transition-all">
           <div class="w-6 h-6 flex items-center justify-center">
@@ -2001,17 +2010,30 @@
       });
     }
 
+    function isStandaloneApp() {
+      return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+             (window.navigator.standalone === true) ||
+             (document.referrer && document.referrer.includes('android-app://'));
+    }
+
     let deferredPwaPrompt = null;
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPwaPrompt = e;
-      const dismissed = localStorage.getItem('pwa_dismissed_time');
-      if (!dismissed || (Date.now() - Number(dismissed) > 7 * 24 * 3600 * 1000)) {
-        setTimeout(showPwaPrompt, 2500);
+      if (!isStandaloneApp()) {
+        showPwaPrompt();
+      }
+    });
+
+    // Muncul setiap kali akses link lewat browser web biasa, tapi hilang total jika dibuka dari aplikasi di HP
+    window.addEventListener('DOMContentLoaded', () => {
+      if (!isStandaloneApp()) {
+        setTimeout(showPwaPrompt, 1500);
       }
     });
 
     function showPwaPrompt() {
+      if (isStandaloneApp()) return; // Hilang jika sudah diakses dari aplikasi di hp
       const banner = document.getElementById('pwa-install-banner');
       if (banner) {
         banner.classList.remove('hidden');
@@ -2022,7 +2044,6 @@
     }
 
     function dismissPwaPrompt() {
-      localStorage.setItem('pwa_dismissed_time', Date.now());
       const banner = document.getElementById('pwa-install-banner');
       if (banner) {
         banner.classList.add('translate-y-8', 'opacity-0');
@@ -2045,7 +2066,7 @@
           const m = document.getElementById('pwa-ios-modal');
           if (m) { m.classList.remove('hidden'); m.classList.add('flex'); }
         } else {
-          showModernToast('Buka menu browser Anda lalu pilih "Tambahkan ke Layar Utama" / "Instal Aplikasi".', 'info');
+          showModernToast('Buka menu browser Anda (titik tiga) lalu pilih "Tambahkan ke Layar Utama" / "Instal Aplikasi".', 'info', 4000);
         }
       }
     }
@@ -2579,6 +2600,14 @@
 
       const btnBackTop = document.getElementById('btn-topbar-back');
       const pageTitle = document.getElementById('page-title');
+      const appTopbar = document.getElementById('app-topbar');
+      if (appTopbar) {
+        if (pageId === 'dashboard' && window.innerWidth < 768) {
+          appTopbar.classList.add('hidden');
+        } else {
+          appTopbar.classList.remove('hidden');
+        }
+      }
       const titleMap = {
         'dashboard': 'Dashboard',
         'profil': 'Profil Guru',
