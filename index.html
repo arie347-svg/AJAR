@@ -17,7 +17,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
   <!-- CDN Tailwind CSS & Library Eksternal -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -112,8 +112,8 @@
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-            heading: ['Poppins', 'Inter', 'sans-serif'],
+            sans: ['Plus Jakarta Sans', 'Inter', '-apple-system', 'sans-serif'],
+            heading: ['Plus Jakarta Sans', 'sans-serif'],
           },
           colors: {
             brand: {
@@ -151,13 +151,13 @@
 
     * {
       box-sizing: border-box;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
     }
 
     h1, h2, h3, h4, h5, h6, .font-heading, .touch-btn, button {
-      font-family: 'Poppins', 'Inter', sans-serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
     .tabular-nums {
@@ -189,11 +189,10 @@
 
     #app-container {
       width: 100%;
-      max-width: 480px;
       height: 100%;
       height: 100dvh;
       margin: 0 auto;
-      background: linear-gradient(135deg, #003844 0%, #005f73 40%, #0a9396 85%, #008b94 100%);
+      background: linear-gradient(135deg, #001f26 0%, #003844 40%, #005f73 85%, #004d40 100%);
       display: flex;
       flex-direction: column;
       position: relative;
@@ -202,22 +201,19 @@
       transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    /* RESPONSIVE AUTO EXPANSION FOR TABLET & DESKTOP (WEB MODE) */
+    /* RESPONSIVE DESKTOP LAYOUT (SIDEBAR + MAIN CONTENT) */
     @media (min-width: 768px) {
       #app-container {
-        max-width: 1024px;
-        box-shadow: 0 25px 70px -10px rgba(0, 20, 28, 0.6);
-      }
-    }
-    @media (min-width: 1280px) {
-      #app-container {
-        max-width: 1200px;
-      }
-    }
-    @media (max-width: 480px) {
-      #app-container {
-        max-width: 100%;
+        max-width: 100% !important;
+        flex-direction: row !important;
+        border-radius: 0;
         box-shadow: none;
+      }
+    }
+    @media (max-width: 767px) {
+      #app-container {
+        max-width: 480px;
+        width: 100%;
       }
     }
 
@@ -876,6 +872,76 @@
       </div>
     </div>
 
+        <!-- ================= DESKTOP SIDEBAR NAVIGATION (SLEEK SAAS, >= 768px) ================= -->
+    <aside id="desktop-sidebar" class="hidden md:flex flex-col w-64 lg:w-72 bg-[#001c24]/95 backdrop-blur-2xl border-r border-teal-500/20 text-white shrink-0 z-30 select-none justify-between h-full p-4 overflow-y-auto no-scrollbar">
+      <div class="space-y-6">
+        <!-- Logo & Header Brand -->
+        <div class="flex items-center space-x-3 px-2 pt-1">
+          <div class="relative w-11 h-11 rounded-2xl bg-white/10 p-1.5 flex items-center justify-center shrink-0 border border-teal-400/30 shadow-md">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/9/9c/Logo_Kemenag.png" alt="AJAR" class="w-8 h-8 object-contain">
+          </div>
+          <div>
+            <h2 class="text-base font-black tracking-wider text-white">AJAR</h2>
+            <p class="text-[10px] font-bold text-[#fde047] uppercase tracking-wider">MAN 1 Majalengka</p>
+          </div>
+        </div>
+
+        <!-- Navigation Menu Items -->
+        <nav class="space-y-1.5">
+          <button onclick="navTo('dashboard')" id="sidebar-btn-dashboard" class="sidebar-nav-item w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all text-white/80 hover:bg-white/10 hover:text-white">
+            <svg class="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            <span>Beranda</span>
+          </button>
+
+          <button onclick="navTo('master-ajar')" id="sidebar-btn-master-ajar" class="sidebar-nav-item w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all text-white/80 hover:bg-white/10 hover:text-white">
+            <svg class="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
+            <span>Master Ajar</span>
+          </button>
+
+          <button onclick="navTo('master-siswa')" id="sidebar-btn-master-siswa" class="sidebar-nav-item w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all text-white/80 hover:bg-white/10 hover:text-white">
+            <svg class="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            <span>Data Siswa</span>
+          </button>
+
+          <button onclick="navTo('absensi')" id="sidebar-btn-absensi" class="sidebar-nav-item w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all text-white/80 hover:bg-white/10 hover:text-white">
+            <svg class="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+            <span>Entri Presensi</span>
+          </button>
+
+          <button onclick="navTo('nilai')" id="sidebar-btn-nilai" class="sidebar-nav-item w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all text-white/80 hover:bg-white/10 hover:text-white">
+            <svg class="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <span>Input Nilai</span>
+          </button>
+
+          <button onclick="navTo('lkh')" id="sidebar-btn-lkh" class="sidebar-nav-item w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all text-white/80 hover:bg-white/10 hover:text-white">
+            <svg class="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+            <span>Jurnal LKH</span>
+          </button>
+
+          <button onclick="navTo('laporan')" id="sidebar-btn-laporan" class="sidebar-nav-item w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all text-white/80 hover:bg-white/10 hover:text-white">
+            <svg class="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+            <span>Export Laporan</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Desktop Sidebar Footer (User Info & Logout) -->
+      <div class="pt-4 border-t border-teal-500/20 space-y-2">
+        <div onclick="navTo('profil')" class="flex items-center space-x-3 p-2.5 rounded-2xl bg-white/10 hover:bg-white/15 cursor-pointer active:scale-98 transition-all border border-white/10">
+          <img id="sidebar-user-avatar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 24 24' fill='%23FDE047'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>" class="w-9 h-9 rounded-full object-cover ring-2 ring-[#fde047]/60 shrink-0">
+          <div class="min-w-0 flex-1">
+            <p id="sidebar-user-name" class="text-xs font-extrabold text-white truncate">Guru</p>
+            <p id="sidebar-user-nip" class="text-[10px] text-white/70 font-mono truncate">NIP. -</p>
+          </div>
+        </div>
+
+        <button onclick="handleLogout()" class="w-full flex items-center justify-center space-x-2 py-2.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 text-xs font-bold active:scale-95 transition-all border border-rose-400/20">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+          <span>Keluar</span>
+        </button>
+      </div>
+    </aside>
+
     <!-- ================= MAIN APP SHELL ================= -->
     <div id="main-content" class="flex-1 flex flex-col h-full overflow-hidden relative">
       
@@ -1008,11 +1074,11 @@
                 <span class="text-[11px] font-bold text-white">Jurnal LKH</span>
               </button>
               
-              <button onclick="navTo('profil')" class="p-3 bg-white/10 backdrop-blur-md hover:bg-white/20 active:scale-95 rounded-2xl text-center text-white transition-all flex flex-col items-center">
+              <button onclick="navTo('laporan')" class="p-3 bg-white/10 backdrop-blur-md hover:bg-white/20 active:scale-95 rounded-2xl text-center text-white transition-all flex flex-col items-center">
                 <div class="w-11 h-11 rounded-2xl bg-white/20 text-[#fde047] flex items-center justify-center mb-1.5 shadow-xs">
-                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
                 </div>
-                <span class="text-[11px] font-bold text-white">Profil Guru</span>
+                <span class="text-[11px] font-bold text-white">Export Laporan</span>
               </button>
             </div>
           </div>
@@ -1184,15 +1250,6 @@
         <section id="page-absensi" class="page space-y-3.5 hidden">
           
           <div class="sticky top-0 bg-transparent pt-1 pb-2.5 z-20 space-y-2.5">
-            <div class="bg-white/15 backdrop-blur-md p-1.5 rounded-2xl flex items-center space-x-1 border border-white/10 shadow-lg">
-              <button onclick="switchAbsensiTab('form')" id="tab-btn-abs-form" class="flex-1 py-2 rounded-xl text-xs font-extrabold bg-[#facc15] text-slate-900 shadow-md transition-all">
-                Form Entri Presensi
-              </button>
-              <button onclick="switchAbsensiTab('rekap')" id="tab-btn-abs-rekap" class="flex-1 py-2 rounded-xl text-xs font-extrabold text-white/70 transition-all">
-                Rekap Matriks
-              </button>
-            </div>
-
             <div class="bg-white/15 backdrop-blur-md p-3 rounded-2xl shadow-xl flex items-center space-x-2 border border-white/10">
               <div class="flex-1">
                 <select id="abs-pengajaran-select" onchange="handlePengajaranSelectChange(this)" class="w-full"></select>
@@ -1235,29 +1292,7 @@
             </div>
           </div>
 
-          <!-- TAB 2: REKAPITULASI & MATRIKS TABEL (CLEAN CONTRAST) -->
-          <div id="abs-view-rekap" class="space-y-3 hidden">
-            <div class="bg-[#002830]/80 backdrop-blur-2xl rounded-3xl p-4 text-white shadow-2xl border border-white/15 space-y-3">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-black text-white">Matriks Presensi</span>
-                <div class="w-36">
-                  <select id="abs-export-format" onchange="if(this.value){ exportReport('ABSENSI', this.value); this.value=''; }" class="w-full">
-                    <option value="" class="bg-[#00242c] text-white font-medium py-1.5">Export Rekap</option>
-                    <option value="EXCEL" class="bg-[#00242c] text-white font-medium py-1.5">Excel</option>
-                    <option value="WORD" class="bg-[#00242c] text-white font-medium py-1.5">Word</option>
-                    <option value="PDF" class="bg-[#00242c] text-white font-medium py-1.5">PDF</option>
-                  </select>
-                </div>
-              </div>
-
-              <div id="abs-table-wrapper" class="rounded-2xl border border-white/15 overflow-auto touch-scroll bg-[#002830]/90 backdrop-blur-xl p-1 max-h-[calc(100vh-270px)] relative">
-                <table id="table-absensi" class="w-full text-left text-xs whitespace-nowrap">
-                  <thead id="abs-header" class="sticky top-0 z-10 bg-[#00242c] text-[#fde047] font-extrabold border-b border-white/20 shadow-md"></thead>
-                  <tbody id="abs-body" class="font-medium text-white divide-y divide-white/10"></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+          
 
         </section>
 
@@ -1265,15 +1300,6 @@
         <section id="page-nilai" class="page space-y-3.5 hidden">
           
           <div class="sticky top-0 bg-transparent pt-1 pb-2.5 z-20 space-y-2.5">
-            <div class="bg-white/15 backdrop-blur-md p-1.5 rounded-2xl flex items-center space-x-1 border border-white/10 shadow-lg">
-              <button onclick="switchNilaiTab('form')" id="tab-btn-nil-form" class="flex-1 py-2 rounded-xl text-xs font-extrabold bg-[#facc15] text-slate-900 shadow-md transition-all">
-                Input Nilai
-              </button>
-              <button onclick="switchNilaiTab('rekap')" id="tab-btn-nil-rekap" class="flex-1 py-2 rounded-xl text-xs font-extrabold text-white/70 transition-all">
-                Rekap Ledger Nilai
-              </button>
-            </div>
-
             <div class="bg-white/15 backdrop-blur-md p-3 rounded-2xl shadow-xl flex items-center space-x-2 border border-white/10">
               <div class="flex-1">
                 <select id="nil-pengajaran-select" onchange="handlePengajaranNilaiChange(this)" class="w-full"></select>
@@ -1324,50 +1350,13 @@
             </div>
           </div>
 
-          <!-- TAB 2: REKAP LEDGER NILAI -->
-          <div id="nil-view-rekap" class="space-y-3 hidden">
-            <div class="bg-[#002830]/80 backdrop-blur-2xl rounded-3xl p-4 text-white border border-white/15 space-y-3.5 shadow-2xl">
-              <div class="flex items-center justify-between bg-white/10 p-3 rounded-2xl text-[11px] font-bold text-white border border-white/10">
-                <label class="flex items-center space-x-1.5"><span>KKM:</span><input type="number" id="nil-kkm" value="75" onchange="handleSettingsChange()" class="w-12 bg-white/20 text-white rounded-lg p-1 text-center font-bold border border-white/20 shadow-xs"></label>
-                <label class="flex items-center space-x-1.5"><span>Act(%):</span><input type="number" id="nil-bobot-act" value="66" onchange="handleSettingsChange()" class="w-12 bg-white/20 text-white rounded-lg p-1 text-center font-bold border border-white/20 shadow-xs"></label>
-                <label class="flex items-center space-x-1.5"><span>PAS(%):</span><input type="number" id="nil-bobot-pas" value="34" onchange="handleSettingsChange()" class="w-12 bg-white/20 text-white rounded-lg p-1 text-center font-bold border border-white/20 shadow-xs"></label>
-              </div>
-
-              <div class="flex justify-between items-center">
-                <span class="text-xs font-black text-white">Ledger Nilai Siswa</span>
-                <div class="w-36">
-                  <select id="nil-export-format" onchange="if(this.value){ exportReport('NILAI', this.value); this.value=''; }" class="w-full">
-                    <option value="" class="bg-[#00242c] text-white font-medium py-1.5">Export Ledger</option>
-                    <option value="EXCEL" class="bg-[#00242c] text-white font-medium py-1.5">Excel</option>
-                    <option value="WORD" class="bg-[#00242c] text-white font-medium py-1.5">Word</option>
-                    <option value="PDF" class="bg-[#00242c] text-white font-medium py-1.5">PDF</option>
-                  </select>
-                </div>
-              </div>
-
-              <div id="nil-table-wrapper" class="rounded-2xl border border-white/15 overflow-auto touch-scroll bg-[#002830]/90 backdrop-blur-xl p-1 max-h-[calc(100vh-320px)] relative">
-                <table id="table-nilai" class="w-full text-left text-xs whitespace-nowrap">
-                  <thead id="nil-header" class="sticky top-0 z-10 bg-[#00242c] text-[#fde047] font-extrabold border-b border-white/20 shadow-md"></thead>
-                  <tbody id="nil-body" class="font-medium text-white divide-y divide-white/10"></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+          
 
         </section>
 
         <!-- ================= PAGE 7: JURNAL LKH (CONVERSATIONAL STEPPER) ================= -->
         <section id="page-lkh" class="page space-y-4 hidden">
           
-          <div class="bg-white/15 backdrop-blur-md p-1.5 rounded-2xl flex items-center space-x-1 border border-white/10 shadow-lg">
-            <button onclick="switchLkhTab('form')" id="tab-btn-lkh-form" class="flex-1 py-2 rounded-xl text-xs font-extrabold bg-[#facc15] text-slate-900 shadow-md transition-all">
-              Entri Jurnal LKH
-            </button>
-            <button onclick="switchLkhTab('rekap')" id="tab-btn-lkh-rekap" class="flex-1 py-2 rounded-xl text-xs font-extrabold text-white/70 transition-all">
-              Rekap Riwayat LKH
-            </button>
-          </div>
-
           <!-- TAB 1: FORM PENGISIAN LKH (WIZARD & KLASIK) -->
           <div id="lkh-view-form" class="space-y-3.5">
             
@@ -1700,7 +1689,86 @@
 
           </div>
 
-          <!-- TAB 2: REKAP RIWAYAT LKH (FROSTED GLASS MATRIX) -->
+          
+
+        </section>
+
+        <!-- ================= PAGE 8: EXPORT LAPORAN ================= -->
+        <section id="page-laporan" class="page space-y-3.5 hidden">
+          <!-- SUBMENU LAPORAN SWITCHER PILLS -->
+          <div class="sticky top-0 bg-transparent pt-1 pb-2.5 z-20 space-y-2.5">
+            <div class="bg-white/15 backdrop-blur-md p-1.5 rounded-2xl flex items-center space-x-1 border border-white/10 shadow-lg">
+              <button onclick="switchLaporanTab('absensi')" id="tab-btn-lap-abs" class="flex-1 py-2 rounded-xl text-xs font-black bg-[#facc15] text-slate-900 shadow-md transition-all">
+                Presensi
+              </button>
+              <button onclick="switchLaporanTab('nilai')" id="tab-btn-lap-nil" class="flex-1 py-2 rounded-xl text-xs font-bold text-white/70 hover:text-white transition-all">
+                Penilaian
+              </button>
+              <button onclick="switchLaporanTab('lkh')" id="tab-btn-lap-lkh" class="flex-1 py-2 rounded-xl text-xs font-bold text-white/70 hover:text-white transition-all">
+                Jurnal LKH
+              </button>
+            </div>
+          </div>
+
+          <!-- SUBMENU 1: LAPORAN PRESENSI (MATRIKS) -->
+          <div id="abs-view-rekap" class="space-y-3">
+            <div class="bg-[#002830]/80 backdrop-blur-2xl rounded-3xl p-4 text-white shadow-2xl border border-white/15 space-y-3">
+              <div class="grid grid-cols-12 gap-2">
+                <div class="col-span-8 sm:col-span-9">
+                  <select id="lap-abs-pengajaran-select" onchange="syncLaporanPengajaranChange('abs', this.value)" class="w-full"></select>
+                </div>
+                <div class="col-span-4 sm:col-span-3">
+                  <select id="abs-export-format" onchange="if(this.value){ exportReport('ABSENSI', this.value); this.value=''; }" class="w-full">
+                    <option value="" class="bg-[#00242c] text-white font-medium py-1.5">Export</option>
+                    <option value="EXCEL" class="bg-[#00242c] text-white font-medium py-1.5">Excel</option>
+                    <option value="WORD" class="bg-[#00242c] text-white font-medium py-1.5">Word</option>
+                    <option value="PDF" class="bg-[#00242c] text-white font-medium py-1.5">PDF</option>
+                  </select>
+                </div>
+              </div>
+
+              <div id="abs-table-wrapper" class="rounded-2xl border border-white/15 overflow-auto touch-scroll bg-[#002830]/90 backdrop-blur-xl p-1 max-h-[calc(100vh-270px)] relative">
+                <table id="table-absensi" class="w-full text-left text-xs whitespace-nowrap">
+                  <thead id="abs-header" class="sticky top-0 z-10 bg-[#00242c] text-[#fde047] font-extrabold border-b border-white/20 shadow-md"></thead>
+                  <tbody id="abs-body" class="font-medium text-white divide-y divide-white/10"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUBMENU 2: LAPORAN PENILAIAN (LEDGER) -->
+          <div id="nil-view-rekap" class="space-y-3 hidden">
+            <div class="bg-[#002830]/80 backdrop-blur-2xl rounded-3xl p-4 text-white border border-white/15 space-y-3.5 shadow-2xl">
+              <div class="grid grid-cols-12 gap-2">
+                <div class="col-span-8 sm:col-span-9">
+                  <select id="lap-nil-pengajaran-select" onchange="syncLaporanPengajaranChange('nil', this.value)" class="w-full"></select>
+                </div>
+                <div class="col-span-4 sm:col-span-3">
+                  <select id="nil-export-format" onchange="if(this.value){ exportReport('NILAI', this.value); this.value=''; }" class="w-full">
+                    <option value="" class="bg-[#00242c] text-white font-medium py-1.5">Export</option>
+                    <option value="EXCEL" class="bg-[#00242c] text-white font-medium py-1.5">Excel</option>
+                    <option value="WORD" class="bg-[#00242c] text-white font-medium py-1.5">Word</option>
+                    <option value="PDF" class="bg-[#00242c] text-white font-medium py-1.5">PDF</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between bg-white/10 p-2.5 rounded-2xl text-[11px] font-bold text-white border border-white/10">
+                <label class="flex items-center space-x-1"><span>KKM:</span><input type="number" id="nil-kkm" value="75" onchange="handleSettingsChange()" class="w-12 bg-white/20 text-white rounded-lg p-1 text-center font-bold border border-white/20 shadow-xs"></label>
+                <label class="flex items-center space-x-1"><span>Act(%):</span><input type="number" id="nil-bobot-act" value="66" onchange="handleSettingsChange()" class="w-12 bg-white/20 text-white rounded-lg p-1 text-center font-bold border border-white/20 shadow-xs"></label>
+                <label class="flex items-center space-x-1"><span>PAS(%):</span><input type="number" id="nil-bobot-pas" value="34" onchange="handleSettingsChange()" class="w-12 bg-white/20 text-white rounded-lg p-1 text-center font-bold border border-white/20 shadow-xs"></label>
+              </div>
+
+              <div id="nil-table-wrapper" class="rounded-2xl border border-white/15 overflow-auto touch-scroll bg-[#002830]/90 backdrop-blur-xl p-1 max-h-[calc(100vh-320px)] relative">
+                <table id="table-nilai" class="w-full text-left text-xs whitespace-nowrap">
+                  <thead id="nil-header" class="sticky top-0 z-10 bg-[#00242c] text-[#fde047] font-extrabold border-b border-white/20 shadow-md"></thead>
+                  <tbody id="nil-body" class="font-medium text-white divide-y divide-white/10"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUBMENU 3: LAPORAN JURNAL LKH -->
           <div id="lkh-view-rekap" class="space-y-3.5 hidden">
             <div class="bg-white/10 backdrop-blur-xl rounded-3xl p-4 text-white shadow-xl shadow-black/10 border border-white/15 space-y-3">
               <div class="grid grid-cols-12 gap-2">
@@ -1743,7 +1811,6 @@
               <div id="lkh-cards-container" class="hidden space-y-2.5 min-h-[140px]"></div>
             </div>
           </div>
-
         </section>
 
       </main>
@@ -1773,7 +1840,7 @@
       </div>
 
       <!-- ================= FLOATING FROSTED GLASS BOTTOM NAVIGATION ================= -->
-      <nav class="fixed bottom-3 left-3 right-3 max-w-[456px] md:max-w-[620px] mx-auto z-40 bg-[#00242c]/90 backdrop-blur-2xl rounded-3xl border border-teal-500/25 shadow-2xl px-3 py-1.5 flex justify-around items-center">
+      <nav id="mobile-bottom-nav" class="fixed bottom-3 left-3 right-3 max-w-[456px] mx-auto z-40 bg-[#00242c]/95 backdrop-blur-2xl rounded-3xl border border-teal-500/25 shadow-2xl px-2 py-1.5 flex md:hidden justify-around items-center">
         
         <button onclick="navTo('dashboard')" id="nav-btn-dashboard" class="nav-item active flex flex-col items-center justify-center w-14 py-1 active:scale-95 transition-all">
           <div class="w-6 h-6 flex items-center justify-center">
@@ -1803,11 +1870,18 @@
           <span class="text-[10px] font-bold mt-0.5">Nilai</span>
         </button>
 
-        <button onclick="navTo('lkh')" id="nav-btn-lkh" class="nav-item flex flex-col items-center justify-center w-14 py-1 active:scale-95 transition-all">
+        <button onclick="navTo('lkh')" id="nav-btn-lkh" class="nav-item flex flex-col items-center justify-center w-12 py-1 active:scale-95 transition-all">
           <div class="w-6 h-6 flex items-center justify-center">
             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
           </div>
-          <span class="text-[10px] font-bold mt-0.5">LKH</span>
+          <span class="text-[9px] font-bold mt-0.5">LKH</span>
+        </button>
+
+        <button onclick="navTo('laporan')" id="nav-btn-laporan" class="nav-item flex flex-col items-center justify-center w-12 py-1 active:scale-95 transition-all">
+          <div class="w-6 h-6 flex items-center justify-center">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+          </div>
+          <span class="text-[9px] font-bold mt-0.5">Laporan</span>
         </button>
 
       </nav>
@@ -1915,6 +1989,151 @@
        ========================================================================== -->
   <script>
     let activePageId = 'dashboard';
+
+    // =========================================================================
+    // SERVICE WORKER & WORLD-CLASS PWA INSTALL PROMPT
+    // =========================================================================
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => {
+          console.warn('[PWA] Service worker registration skipped:', err);
+        });
+      });
+    }
+
+    let deferredPwaPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPwaPrompt = e;
+      const dismissed = localStorage.getItem('pwa_dismissed_time');
+      if (!dismissed || (Date.now() - Number(dismissed) > 7 * 24 * 3600 * 1000)) {
+        setTimeout(showPwaPrompt, 2500);
+      }
+    });
+
+    function showPwaPrompt() {
+      const banner = document.getElementById('pwa-install-banner');
+      if (banner) {
+        banner.classList.remove('hidden');
+        requestAnimationFrame(() => {
+          banner.classList.remove('translate-y-8', 'opacity-0');
+        });
+      }
+    }
+
+    function dismissPwaPrompt() {
+      localStorage.setItem('pwa_dismissed_time', Date.now());
+      const banner = document.getElementById('pwa-install-banner');
+      if (banner) {
+        banner.classList.add('translate-y-8', 'opacity-0');
+        setTimeout(() => banner.classList.add('hidden'), 300);
+      }
+    }
+
+    function triggerPwaInstall() {
+      if (deferredPwaPrompt) {
+        deferredPwaPrompt.prompt();
+        deferredPwaPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            dismissPwaPrompt();
+          }
+          deferredPwaPrompt = null;
+        });
+      } else {
+        const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIos) {
+          const m = document.getElementById('pwa-ios-modal');
+          if (m) { m.classList.remove('hidden'); m.classList.add('flex'); }
+        } else {
+          showModernToast('Buka menu browser Anda lalu pilih "Tambahkan ke Layar Utama" / "Instal Aplikasi".', 'info');
+        }
+      }
+    }
+
+    function closeIosPwaModal() {
+      const m = document.getElementById('pwa-ios-modal');
+      if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
+    }
+
+
+    // =========================================================================
+    // EXPORT LAPORAN MODULE (PRESENSI, NILAI, LKH)
+    // =========================================================================
+    let activeLaporanTab = 'absensi';
+
+    function switchLaporanTab(tab) {
+      triggerHaptic();
+      activeLaporanTab = tab;
+
+      const isAbs = tab === 'absensi';
+      const isNil = tab === 'nilai';
+      const isLkh = tab === 'lkh';
+
+      const absRekapEl = document.getElementById('abs-view-rekap');
+      const nilRekapEl = document.getElementById('nil-view-rekap');
+      const lkhRekapEl = document.getElementById('lkh-view-rekap');
+
+      if (absRekapEl) absRekapEl.classList.toggle('hidden', !isAbs);
+      if (nilRekapEl) nilRekapEl.classList.toggle('hidden', !isNil);
+      if (lkhRekapEl) lkhRekapEl.classList.toggle('hidden', !isLkh);
+
+      const btnAbs = document.getElementById('tab-btn-lap-abs');
+      const btnNil = document.getElementById('tab-btn-lap-nil');
+      const btnLkh = document.getElementById('tab-btn-lap-lkh');
+
+      const activeCls = 'flex-1 py-2 rounded-xl text-xs font-black bg-[#facc15] text-slate-900 shadow-md transition-all';
+      const inactiveCls = 'flex-1 py-2 rounded-xl text-xs font-bold text-white/70 hover:text-white transition-all';
+
+      if (btnAbs) btnAbs.className = isAbs ? activeCls : inactiveCls;
+      if (btnNil) btnNil.className = isNil ? activeCls : inactiveCls;
+      if (btnLkh) btnLkh.className = isLkh ? activeCls : inactiveCls;
+
+      if (isAbs) {
+        syncLaporanPengajaranSelect('abs');
+        renderAbsensiTable();
+      } else if (isNil) {
+        syncLaporanPengajaranSelect('nil');
+        renderNilaiTable();
+      } else if (isLkh) {
+        loadLKH();
+      }
+    }
+
+    function syncLaporanPengajaranSelect(type) {
+      if (type === 'abs') {
+        const sourceSel = document.getElementById('abs-pengajaran-select');
+        const targetSel = document.getElementById('lap-abs-pengajaran-select');
+        if (sourceSel && targetSel) {
+          targetSel.innerHTML = sourceSel.innerHTML;
+          targetSel.value = sourceSel.value;
+        }
+      } else if (type === 'nil') {
+        const sourceSel = document.getElementById('nil-pengajaran-select');
+        const targetSel = document.getElementById('lap-nil-pengajaran-select');
+        if (sourceSel && targetSel) {
+          targetSel.innerHTML = sourceSel.innerHTML;
+          targetSel.value = sourceSel.value;
+        }
+      }
+    }
+
+    function syncLaporanPengajaranChange(type, val) {
+      triggerHaptic();
+      if (type === 'abs') {
+        const sourceSel = document.getElementById('abs-pengajaran-select');
+        if (sourceSel) {
+          sourceSel.value = val;
+          loadAbsensi();
+        }
+      } else if (type === 'nil') {
+        const sourceSel = document.getElementById('nil-pengajaran-select');
+        if (sourceSel) {
+          sourceSel.value = val;
+          loadNilai();
+        }
+      }
+    }
+
 
     // State Absensi
     let isAbsensiDirty = false;
@@ -2367,7 +2586,8 @@
         'master-siswa': 'Master Siswa',
         'absensi': 'Absensi Siswa',
         'nilai': 'Penilaian',
-        'lkh': 'Jurnal LKH'
+        'lkh': 'Jurnal LKH',
+        'laporan': 'Export Laporan'
       };
       if (pageTitle) pageTitle.innerText = titleMap[pageId] || 'Dashboard';
       updateFloatingSaveBars();
@@ -2375,20 +2595,35 @@
         btnBackTop.classList.add('hidden');
       }
 
-      // Dynamic Bottom Nav Active State (Fully Reactive & Highlighted)
+      // Dynamic Bottom Nav Active State (Mobile)
       document.querySelectorAll('.nav-item').forEach(btn => {
         btn.classList.remove('active', 'text-[#facc15]', 'scale-105', 'text-blue-600', 'text-slate-400');
       });
 
-      // Map pageId to corresponding nav button (including sub-pages like master-siswa)
+      // Dynamic Sidebar Active State (Desktop)
+      document.querySelectorAll('.sidebar-nav-item').forEach(btn => {
+        btn.classList.remove('active', 'bg-[#facc15]', 'text-slate-900', 'font-black');
+        btn.classList.add('text-white/80');
+      });
+
       let targetNavId = 'nav-btn-' + pageId;
       if (pageId === 'master-siswa') {
         targetNavId = 'nav-btn-master-ajar';
       }
-
       const activeNavBtn = document.getElementById(targetNavId);
       if (activeNavBtn) {
         activeNavBtn.classList.add('active');
+      }
+
+      let targetSidebarId = 'sidebar-btn-' + pageId;
+      const activeSidebarBtn = document.getElementById(targetSidebarId);
+      if (activeSidebarBtn) {
+        activeSidebarBtn.classList.add('active', 'bg-[#facc15]', 'text-slate-900', 'font-black');
+        activeSidebarBtn.classList.remove('text-white/80');
+      }
+
+      if (pageId === 'laporan') {
+        switchLaporanTab(activeLaporanTab || 'absensi');
       }
       
       if (pageId === 'dashboard') loadDashboard();
@@ -3208,16 +3443,16 @@
        ========================================================================= */
     function switchAbsensiTab(tab) {
       triggerHaptic();
-      const isForm = tab === 'form';
-      document.getElementById('abs-view-form').classList.toggle('hidden', !isForm);
-      document.getElementById('abs-view-rekap').classList.toggle('hidden', isForm);
+      const formEl = document.getElementById('abs-view-form');
+      if (formEl) formEl.classList.remove('hidden');
       updateFloatingSaveBars();
-
       const btnForm = document.getElementById('tab-btn-abs-form');
       const btnRekap = document.getElementById('tab-btn-abs-rekap');
-
-      btnForm.className = isForm ? 'flex-1 py-2 rounded-xl text-xs font-extrabold bg-[#facc15] text-slate-900 shadow-md transition-all' : 'flex-1 py-2 rounded-xl text-xs font-extrabold text-white/70 hover:text-white transition-all';
-      btnRekap.className = !isForm ? 'flex-1 py-2 rounded-xl text-xs font-extrabold bg-[#facc15] text-slate-900 shadow-md transition-all' : 'flex-1 py-2 rounded-xl text-xs font-extrabold text-white/70 hover:text-white transition-all';
+      if (btnForm && btnRekap) {
+        const isForm = tab === 'form';
+        btnForm.className = isForm ? 'flex-1 py-2 rounded-xl text-xs font-extrabold bg-[#facc15] text-slate-900 shadow-md transition-all' : 'flex-1 py-2 rounded-xl text-xs font-extrabold text-white/70 hover:text-white transition-all';
+        btnRekap.className = !isForm ? 'flex-1 py-2 rounded-xl text-xs font-extrabold bg-[#facc15] text-slate-900 shadow-md transition-all' : 'flex-1 py-2 rounded-xl text-xs font-extrabold text-white/70 hover:text-white transition-all';
+      }
     }
 
     function loadAbsensiDropdowns() {
@@ -3235,6 +3470,11 @@
             });
           }
           sel.value = '';
+          const lapSel = document.getElementById('lap-abs-pengajaran-select');
+          if (lapSel) {
+            lapSel.innerHTML = sel.innerHTML;
+            lapSel.value = '';
+          }
         })
         .withFailureHandler(() => {
           sel.innerHTML = '<option value="">-- Gagal memuat data --</option>';
@@ -3468,16 +3708,16 @@
        ========================================================================= */
     function switchNilaiTab(tab) {
       triggerHaptic();
-      const isForm = tab === 'form';
-      document.getElementById('nil-view-form').classList.toggle('hidden', !isForm);
-      document.getElementById('nil-view-rekap').classList.toggle('hidden', isForm);
+      const formEl = document.getElementById('nil-view-form');
+      if (formEl) formEl.classList.remove('hidden');
       updateFloatingSaveBars();
-
       const btnForm = document.getElementById('tab-btn-nil-form');
       const btnRekap = document.getElementById('tab-btn-nil-rekap');
-
-      btnForm.className = isForm ? 'flex-1 py-2 rounded-xl text-xs font-extrabold bg-[#facc15] text-slate-900 shadow-md transition-all' : 'flex-1 py-2 rounded-xl text-xs font-extrabold text-white/70 hover:text-white transition-all';
-      btnRekap.className = !isForm ? 'flex-1 py-2 rounded-xl text-xs font-extrabold bg-[#facc15] text-slate-900 shadow-md transition-all' : 'flex-1 py-2 rounded-xl text-xs font-extrabold text-white/70 hover:text-white transition-all';
+      if (btnForm && btnRekap) {
+        const isForm = tab === 'form';
+        btnForm.className = isForm ? 'flex-1 py-2 rounded-xl text-xs font-extrabold bg-[#facc15] text-slate-900 shadow-md transition-all' : 'flex-1 py-2 rounded-xl text-xs font-extrabold text-white/70 hover:text-white transition-all';
+        btnRekap.className = !isForm ? 'flex-1 py-2 rounded-xl text-xs font-extrabold bg-[#facc15] text-slate-900 shadow-md transition-all' : 'flex-1 py-2 rounded-xl text-xs font-extrabold text-white/70 hover:text-white transition-all';
+      }
     }
 
     function loadNilaiDropdowns() {
@@ -3495,6 +3735,11 @@
             });
           }
           sel.value = '';
+          const lapSel = document.getElementById('lap-nil-pengajaran-select');
+          if (lapSel) {
+            lapSel.innerHTML = sel.innerHTML;
+            lapSel.value = '';
+          }
         })
         .withFailureHandler(() => {
           sel.innerHTML = '<option value="">-- Gagal memuat data --</option>';
@@ -3731,16 +3976,16 @@
        ========================================================================= */
     function switchLkhTab(tab) {
       triggerHaptic();
-      const isForm = tab === 'form';
-      document.getElementById('lkh-view-form').classList.toggle('hidden', !isForm);
-      document.getElementById('lkh-view-rekap').classList.toggle('hidden', isForm);
+      const formEl = document.getElementById('lkh-view-form');
+      if (formEl) formEl.classList.remove('hidden');
       updateFloatingSaveBars();
-
       const btnForm = document.getElementById('tab-btn-lkh-form');
       const btnRekap = document.getElementById('tab-btn-lkh-rekap');
-
-      btnForm.className = isForm ? 'flex-1 py-2 rounded-xl text-xs font-extrabold bg-[#facc15] text-slate-900 shadow-md transition-all' : 'flex-1 py-2 rounded-xl text-xs font-extrabold text-white/70 hover:text-white transition-all';
-      btnRekap.className = !isForm ? 'flex-1 py-2 rounded-xl text-xs font-extrabold bg-[#facc15] text-slate-900 shadow-md transition-all' : 'flex-1 py-2 rounded-xl text-xs font-extrabold text-white/70 hover:text-white transition-all';
+      if (btnForm && btnRekap) {
+        const isForm = tab === 'form';
+        btnForm.className = isForm ? 'flex-1 py-2 rounded-xl text-xs font-extrabold bg-[#facc15] text-slate-900 shadow-md transition-all' : 'flex-1 py-2 rounded-xl text-xs font-extrabold text-white/70 hover:text-white transition-all';
+        btnRekap.className = !isForm ? 'flex-1 py-2 rounded-xl text-xs font-extrabold bg-[#facc15] text-slate-900 shadow-md transition-all' : 'flex-1 py-2 rounded-xl text-xs font-extrabold text-white/70 hover:text-white transition-all';
+      }
     }
 
     function openLkhFromDashboard() {
@@ -5540,7 +5785,56 @@
                 </table>
               </div>
             </div>
-          </body>
+            <!-- ================= WORLD-CLASS PWA INSTALL PROMPT BANNER ================= -->
+  <div id="pwa-install-banner" class="fixed bottom-4 left-3 right-3 max-w-md mx-auto z-50 hidden transition-all duration-300 transform translate-y-8 opacity-0 pointer-events-auto">
+    <div class="bg-gradient-to-r from-[#002830] via-[#003844] to-[#004d40] border border-teal-400/40 rounded-3xl p-4 shadow-2xl text-white backdrop-blur-2xl flex items-center justify-between space-x-3">
+      <div class="flex items-center space-x-3 min-w-0">
+        <div class="relative w-12 h-12 rounded-2xl bg-white/15 p-1 flex items-center justify-center shrink-0 border border-teal-300/30 shadow-md">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/9/9c/Logo_Kemenag.png" alt="AJAR" class="w-9 h-9 object-contain">
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center space-x-1.5">
+            <h5 class="text-xs font-black tracking-wide text-white">Instal AJAR</h5>
+            <span class="text-[9px] font-extrabold bg-[#fde047] text-slate-900 px-1.5 py-0.5 rounded-full">PWA</span>
+          </div>
+          <p class="text-[10px] text-white/80 line-clamp-1 mt-0.5">Akses cepat & layar penuh di HP Anda</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-1.5 shrink-0">
+        <button id="pwa-dismiss-btn" onclick="dismissPwaPrompt()" class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-white/70 hover:text-white transition-colors">
+          Nanti
+        </button>
+        <button id="pwa-install-btn" onclick="triggerPwaInstall()" class="px-3.5 py-1.5 rounded-xl bg-[#facc15] hover:bg-[#eab308] text-slate-900 text-xs font-black shadow-lg shadow-black/20 active:scale-95 transition-all flex items-center space-x-1">
+          <span>Pasang</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- iOS Safari Install Guide Modal -->
+  <div id="pwa-ios-modal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div class="bg-[#002830] border border-teal-500/30 text-white rounded-3xl p-5 max-w-sm w-full space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-2 border-b border-white/10">
+        <h5 class="text-xs font-black text-white flex items-center space-x-2">
+          <span>📲 Pasang di iPhone / iPad</span>
+        </h5>
+        <button onclick="closeIosPwaModal()" class="text-white/60 hover:text-white text-sm font-bold">✕</button>
+      </div>
+      <p class="text-xs text-white/80 leading-relaxed">
+        Untuk menginstal aplikasi AJAR ke Layar Utama iPhone/iPad Anda:
+      </p>
+      <ol class="text-xs text-white/90 space-y-2 list-decimal list-inside bg-white/10 p-3 rounded-2xl border border-white/10">
+        <li>Ketuk ikon <strong>Bagikan (Share)</strong> <span class="inline-block px-1 bg-white/20 rounded">⎋</span> di bawah layar browser Safari.</li>
+        <li>Pilih <strong>"Tambahkan ke Layar Utama" (Add to Home Screen)</strong> ➕.</li>
+        <li>Ketuk <strong>"Tambah"</strong> di pojok kanan atas.</li>
+      </ol>
+      <button onclick="closeIosPwaModal()" class="w-full py-2.5 rounded-2xl bg-[#facc15] text-slate-900 font-extrabold text-xs shadow-md">
+        Mengerti
+      </button>
+    </div>
+  </div>
+
+</body>
           </html>
         `;
       }
