@@ -28,7 +28,12 @@ function doGet(e) {
     })).setMimeType(ContentService.MimeType.JSON);
   }
 
-  var template = HtmlService.createTemplateFromFile('Index');
+  var template;
+  try {
+    template = HtmlService.createTemplateFromFile('index');
+  } catch (err) {
+    template = HtmlService.createTemplateFromFile('Index');
+  }
   return template.evaluate()
     .setTitle('AJAR - MAN 1 Majalengka')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover')

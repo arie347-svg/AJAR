@@ -1,11 +1,7 @@
 {
-  "version": 2,
-  "cleanUrls": true,
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/manifest.json", "destination": "/manifest.json" },
-    { "source": "/Index.html", "destination": "/Index.html" },
-    { "source": "/", "destination": "/Index.html" },
-    { "source": "/(.*)", "destination": "/Index.html" }
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
