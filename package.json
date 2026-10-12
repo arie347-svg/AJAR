@@ -1,0 +1,19 @@
+{
+  "name": "ajar-man1majalengka",
+  "version": "1.0.0",
+  "description": "Aplikasi Jurnal dan Administrasi Pembelajaran - MAN 1 Majalengka",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "ajar",
+    "man-1-majalengka",
+    "google-apps-script",
+    "vercel",
+    "pwa"
+  ],
+  "author": "MAN 1 Majalengka",
+  "license": "ISC"
+}

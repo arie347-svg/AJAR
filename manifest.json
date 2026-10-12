@@ -1,0 +1,24 @@
+{
+  "name": "AJAR - MAN 1 Majalengka",
+  "short_name": "AJAR",
+  "description": "Aplikasi Jurnal dan Administrasi Pembelajaran - MAN 1 Majalengka",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1b5e20",
+  "theme_color": "#1b5e20",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://upload.wikimedia.org/wikipedia/commons/9/9c/Logo_Kemenag.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://upload.wikimedia.org/wikipedia/commons/9/9c/Logo_Kemenag.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
