@@ -549,6 +549,16 @@
       color: #FFFFFF !important;
       border-top: 1px solid rgba(6, 182, 212, 0.25) !important;
     }
+      /* Subtle Islamic geometric pattern overlay */
+    .bg-islamic-pattern {
+      background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1.5px, transparent 1.5px),
+                        radial-gradient(rgba(255, 255, 255, 0.05) 1.5px, transparent 1.5px);
+      background-size: 32px 32px;
+      background-position: 0 0, 16px 16px;
+    }
+    .hero-glow {
+      background: radial-gradient(circle at 50% 20%, rgba(131, 197, 190, 0.25) 0%, rgba(0, 109, 119, 0) 70%);
+    }
   </style>
 </head>
 <body class="select-none">
@@ -816,43 +826,68 @@
             </div>
 
             <!-- FORM REGISTRASI GURU VIEW (TERBUKA KETIKA KLIK SIGN UP) -->
-            <div id="register-form-view" class="space-y-3 hidden">
+            <div id="register-form-view" class="space-y-3.5 hidden">
               <div class="pb-1 text-center">
                 <h2 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-heading">Daftar Akun Baru</h2>
                 <p class="text-xs text-slate-500 mt-1 font-medium">Lengkapi formulir pendaftaran guru di bawah ini.</p>
               </div>
 
+              <!-- BARIS 1: GELAR DEPAN - NAMA LENGKAP - GELAR BELAKANG (1 BARIS SEJAJAR) -->
               <div>
-                <label class="block text-[11px] font-extrabold uppercase tracking-wider text-slate-600 mb-1">Gelar Depan</label>
-                <select id="reg-gelar-depan" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 text-sm font-semibold outline-none focus:border-[#008b94] focus:ring-2 focus:ring-[#008b94]/20 cursor-pointer"></select>
-              </div>
+                <div class="grid grid-cols-12 gap-2 sm:gap-2.5">
+                  <!-- Gelar Depan (Kiri) -->
+                  <div class="col-span-3 sm:col-span-3">
+                    <label class="block text-[11px] font-extrabold uppercase tracking-wider text-slate-600 mb-1 truncate" title="Gelar Depan">Gelar Dpn</label>
+                    <select id="reg-gelar-depan" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-3 py-2.5 text-slate-900 text-xs sm:text-sm font-semibold outline-none focus:border-[#008b94] focus:ring-2 focus:ring-[#008b94]/20 cursor-pointer">
+                      <option value="">-</option>
+                    </select>
+                  </div>
 
-              <div>
-                <label class="block text-[11px] font-extrabold uppercase tracking-wider text-slate-600 mb-1">Nama Lengkap</label>
-                <input type="text" id="reg-nama" oninput="clearInputError('reg-nama')" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 text-sm font-semibold placeholder-slate-400 outline-none focus:border-[#008b94] focus:ring-2 focus:ring-[#008b94]/20" placeholder="Nama Lengkap Tanpa Gelar">
+                  <!-- Nama Lengkap (Tengah) -->
+                  <div class="col-span-6 sm:col-span-6">
+                    <label class="block text-[11px] font-extrabold uppercase tracking-wider text-slate-600 mb-1 truncate">Nama Lengkap</label>
+                    <input type="text" id="reg-nama" oninput="clearInputError('reg-nama')" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 text-xs sm:text-sm font-semibold placeholder-slate-400 outline-none focus:border-[#008b94] focus:ring-2 focus:ring-[#008b94]/20" placeholder="Nama Lengkap Tanpa Gelar">
+                  </div>
+
+                  <!-- Gelar Belakang (Kanan) -->
+                  <div class="col-span-3 sm:col-span-3">
+                    <label class="block text-[11px] font-extrabold uppercase tracking-wider text-slate-600 mb-1 truncate" title="Gelar Belakang">Gelar Blkg</label>
+                    <select id="reg-gelar-belakang" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-3 py-2.5 text-slate-900 text-xs sm:text-sm font-semibold outline-none focus:border-[#008b94] focus:ring-2 focus:ring-[#008b94]/20 cursor-pointer">
+                      <option value="">-</option>
+                    </select>
+                  </div>
+                </div>
                 <p id="hint-reg-nama" class="micro-hint text-[11px] text-red-500 font-bold mt-1.5 hidden"></p>
               </div>
 
-              <div>
-                <label class="block text-[11px] font-extrabold uppercase tracking-wider text-slate-600 mb-1">Gelar Belakang</label>
-                <select id="reg-gelar-belakang" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 text-sm font-semibold outline-none focus:border-[#008b94] focus:ring-2 focus:ring-[#008b94]/20 cursor-pointer"></select>
-              </div>
-
-              <div>
-                <label class="block text-[11px] font-extrabold uppercase tracking-wider text-slate-600 mb-1">NIP (Angka)</label>
-                <input type="number" id="reg-nip" oninput="clearInputError('reg-nip')" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 text-sm font-semibold placeholder-slate-400 outline-none focus:border-[#008b94] focus:ring-2 focus:ring-[#008b94]/20" placeholder="1985...">
-                <p id="hint-reg-nip" class="micro-hint text-[11px] text-red-500 font-bold mt-1.5 hidden"></p>
-              </div>
-
+              <!-- BARIS 2: JABATAN (DIBAWAHNYA) -->
               <div>
                 <label class="block text-[11px] font-extrabold uppercase tracking-wider text-slate-600 mb-1">Jabatan</label>
                 <select id="reg-jabatan" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 text-sm font-semibold outline-none focus:border-[#008b94] focus:ring-2 focus:ring-[#008b94]/20 cursor-pointer"></select>
+                <p id="hint-reg-jabatan" class="micro-hint text-[11px] text-red-500 font-bold mt-1.5 hidden"></p>
               </div>
 
+              <!-- BARIS 3: NIP (DIBAWAHNYA) -->
               <div>
-                <label class="block text-[11px] font-extrabold uppercase tracking-wider text-slate-600 mb-1">Password</label>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="block text-[11px] font-extrabold uppercase tracking-wider text-slate-600">NIP (Nomor Induk Pegawai)</label>
+                  <span class="text-[10px] text-slate-400 font-medium">18 Digit Angka</span>
+                </div>
+                <input type="text" inputmode="numeric" id="reg-nip" oninput="handleRegNipInput(this.value)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 text-sm font-semibold placeholder-slate-400 outline-none focus:border-[#008b94] focus:ring-2 focus:ring-[#008b94]/20" placeholder="Contoh: 198501152010011005">
+                <p id="hint-reg-nip" class="micro-hint text-[11px] text-red-500 font-bold mt-1.5 hidden"></p>
+              </div>
+
+              <!-- BARIS 4: PASSWORD (DIBAWAHNYA, OTOMATIS MENGISI NIP) -->
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="block text-[11px] font-extrabold uppercase tracking-wider text-slate-600">Password</label>
+                  <span class="text-[10px] font-bold text-[#008b94] bg-[#008b94]/10 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    Otomatis terisi nilai NIP
+                  </span>
+                </div>
                 <div class="relative flex items-center border border-slate-200 rounded-xl px-3.5 bg-slate-50 focus-within:bg-white focus-within:border-[#008b94] focus-within:ring-2 focus-within:ring-[#008b94]/20 transition-all">
-                  <input type="password" id="reg-password" oninput="clearInputError('reg-password')" class="w-full bg-transparent border-0 text-slate-900 text-sm font-semibold placeholder-slate-400 py-2.5 pr-8 outline-none" placeholder="Min 6 Karakter">
+                  <input type="password" id="reg-password" oninput="clearInputError('reg-password')" class="w-full bg-transparent border-0 text-slate-900 text-sm font-semibold placeholder-slate-400 py-2.5 pr-8 outline-none" placeholder="Otomatis terisi nilai NIP">
                   <button type="button" onclick="togglePassword('reg-password')" class="absolute right-3 text-slate-400 hover:text-[#008b94] p-1 focus:outline-none transition-colors" aria-label="Toggle Password">
                     <svg id="eye-open-reg-password" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                     <svg id="eye-closed-reg-password" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
@@ -861,10 +896,11 @@
                 <p id="hint-reg-password" class="micro-hint text-[11px] text-red-500 font-bold mt-1.5 hidden"></p>
               </div>
 
+              <!-- KONFIRMASI PASSWORD -->
               <div>
                 <label class="block text-[11px] font-extrabold uppercase tracking-wider text-slate-600 mb-1">Konfirmasi Password</label>
                 <div class="relative flex items-center border border-slate-200 rounded-xl px-3.5 bg-slate-50 focus-within:bg-white focus-within:border-[#008b94] focus-within:ring-2 focus-within:ring-[#008b94]/20 transition-all">
-                  <input type="password" id="reg-confirm-password" oninput="clearInputError('reg-confirm-password')" class="w-full bg-transparent border-0 text-slate-900 text-sm font-semibold placeholder-slate-400 py-2.5 pr-8 outline-none" placeholder="Ulangi Password">
+                  <input type="password" id="reg-confirm-password" oninput="clearInputError('reg-confirm-password')" class="w-full bg-transparent border-0 text-slate-900 text-sm font-semibold placeholder-slate-400 py-2.5 pr-8 outline-none" placeholder="Ulangi Password (otomatis terisi nilai NIP)">
                   <button type="button" onclick="togglePassword('reg-confirm-password')" class="absolute right-3 text-slate-400 hover:text-[#008b94] p-1 focus:outline-none transition-colors" aria-label="Toggle Password">
                     <svg id="eye-open-reg-confirm-password" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                     <svg id="eye-closed-reg-confirm-password" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
@@ -2172,7 +2208,57 @@
     // Global Session & References
     let sessionToken = localStorage.getItem('ajar_token') || '';
     let currentUser = null;
-    let referencesMap = {};
+    const DEFAULT_REFERENCES = {
+      GelarDepan: [
+        { code: '', name: '-- Tanpa Gelar Depan --' },
+        { code: 'Drs.', name: 'Drs.' },
+        { code: 'Dra.', name: 'Dra.' },
+        { code: 'Dr.', name: 'Dr.' },
+        { code: 'Prof.', name: 'Prof.' },
+        { code: 'Prof. Dr.', name: 'Prof. Dr.' },
+        { code: 'H.', name: 'H.' },
+        { code: 'Hj.', name: 'Hj.' },
+        { code: 'K.H.', name: 'K.H.' },
+        { code: 'K.', name: 'K.' }
+      ],
+      GelarBelakang: [
+        { code: '', name: '-- Tanpa Gelar Belakang --' },
+        { code: 'S.Pd.', name: 'S.Pd.' },
+        { code: 'S.Pd.I.', name: 'S.Pd.I.' },
+        { code: 'M.Pd.', name: 'M.Pd.' },
+        { code: 'M.Pd.I.', name: 'M.Pd.I.' },
+        { code: 'S.Ag.', name: 'S.Ag.' },
+        { code: 'M.Ag.', name: 'M.Ag.' },
+        { code: 'S.Si.', name: 'S.Si.' },
+        { code: 'M.Si.', name: 'M.Si.' },
+        { code: 'S.Kom.', name: 'S.Kom.' },
+        { code: 'M.Kom.', name: 'M.Kom.' },
+        { code: 'S.E.', name: 'S.E.' },
+        { code: 'M.M.', name: 'M.M.' },
+        { code: 'S.Sos.', name: 'S.Sos.' },
+        { code: 'S.Hum.', name: 'S.Hum.' },
+        { code: 'M.Hum.', name: 'M.Hum.' },
+        { code: 'S.T.', name: 'S.T.' },
+        { code: 'M.T.', name: 'M.T.' },
+        { code: 'Lc.', name: 'Lc.' },
+        { code: 'M.A.', name: 'M.A.' }
+      ],
+      Jabatan: [
+        { id: 'Guru Ahli Pertama', code: 'Guru Ahli Pertama', name: 'Guru Ahli Pertama' },
+        { id: 'Guru Ahli Muda', code: 'Guru Ahli Muda', name: 'Guru Ahli Muda' },
+        { id: 'Guru Ahli Madya', code: 'Guru Ahli Madya', name: 'Guru Ahli Madya' },
+        { id: 'Guru Ahli Utama', code: 'Guru Ahli Utama', name: 'Guru Ahli Utama' },
+        { id: 'Guru Pertama', code: 'Guru Pertama', name: 'Guru Pertama' },
+        { id: 'Guru Muda', code: 'Guru Muda', name: 'Guru Muda' },
+        { id: 'Guru Madya', code: 'Guru Madya', name: 'Guru Madya' },
+        { id: 'Guru Utama', code: 'Guru Utama', name: 'Guru Utama' },
+        { id: 'Guru Mata Pelajaran', code: 'Guru Mata Pelajaran', name: 'Guru Mata Pelajaran' },
+        { id: 'Guru Bimbingan Konseling', code: 'Guru Bimbingan Konseling', name: 'Guru Bimbingan Konseling' },
+        { id: 'Kepala Madrasah', code: 'Kepala Madrasah', name: 'Kepala Madrasah' },
+        { id: 'Wakil Kepala Madrasah', code: 'Wakil Kepala Madrasah', name: 'Wakil Kepala Madrasah' }
+      ]
+    };
+    let referencesMap = JSON.parse(JSON.stringify(DEFAULT_REFERENCES));
     let masterAjarRef = { listKelas: [], listMapel: [] };
     let currentEditType = '';
     let lkhMasterData = { listJam: [], pengajaran: [], listUraian: [], listHasil: [] };
@@ -2334,6 +2420,7 @@
           pSel.innerHTML += `<option value="${i}">Pertemuan ${i}</option>`;
         }
       }
+      populateDropdowns();
     }
 
     function togglePassword(id) {
@@ -2424,6 +2511,21 @@
           showModernToast('Gagal menghubungi server.', 'error');
         })
         .loginUser(u, p);
+    }
+
+    function handleRegNipInput(nipVal) {
+      clearInputError('reg-nip');
+      const cleanVal = String(nipVal || '').trim();
+      const pEl = document.getElementById('reg-password');
+      const cpEl = document.getElementById('reg-confirm-password');
+      if (pEl) {
+        pEl.value = cleanVal;
+        clearInputError('reg-password');
+      }
+      if (cpEl) {
+        cpEl.value = cleanVal;
+        clearInputError('reg-confirm-password');
+      }
     }
 
     function handleRegister() {
@@ -2680,7 +2782,17 @@
     function loadReferences() {
       google.script.run.withSuccessHandler(res => {
         if (res && res.references) {
-          referencesMap = res.references;
+          if (res.references.GelarDepan && res.references.GelarDepan.length > 0) {
+            referencesMap.GelarDepan = res.references.GelarDepan;
+          }
+          if (res.references.GelarBelakang && res.references.GelarBelakang.length > 0) {
+            referencesMap.GelarBelakang = res.references.GelarBelakang;
+          }
+          if (res.references.Jabatan && res.references.Jabatan.length > 0) {
+            referencesMap.Jabatan = res.references.Jabatan;
+          }
+          if (res.references.MataPelajaran) referencesMap.MataPelajaran = res.references.MataPelajaran;
+          if (res.references.Kelas) referencesMap.Kelas = res.references.Kelas;
           populateDropdowns();
         }
       }).getReferencesData();
@@ -2688,26 +2800,33 @@
 
     function populateDropdowns() {
       if (!referencesMap) return;
-      populateSelect('reg-gelar-depan', referencesMap.GelarDepan, true, '-- Tanpa Gelar Depan --');
-      populateSelect('reg-gelar-belakang', referencesMap.GelarBelakang, true, '-- Tanpa Gelar Belakang --');
-      populateSelect('reg-jabatan', referencesMap.Jabatan, true, '-- Pilih Jabatan --');
+      populateSelect('reg-gelar-depan', referencesMap.GelarDepan, true, '-- Tanpa Gelar Depan --', true);
+      populateSelect('reg-gelar-belakang', referencesMap.GelarBelakang, true, '-- Tanpa Gelar Belakang --', true);
+      populateSelect('reg-jabatan', referencesMap.Jabatan, true, '-- Pilih Jabatan Guru --', true);
       
-      populateSelect('edit-gelar-depan', referencesMap.GelarDepan, true, '-- Tanpa Gelar Depan --');
-      populateSelect('edit-gelar-belakang', referencesMap.GelarBelakang, true, '-- Tanpa Gelar Belakang --');
-      populateSelect('edit-jabatan-select', referencesMap.Jabatan, true, '-- Pilih Jabatan --');
+      populateSelect('edit-gelar-depan', referencesMap.GelarDepan, true, '-- Tanpa Gelar Depan --', true);
+      populateSelect('edit-gelar-belakang', referencesMap.GelarBelakang, true, '-- Tanpa Gelar Belakang --', true);
+      populateSelect('edit-jabatan-select', referencesMap.Jabatan, true, '-- Pilih Jabatan Guru --', true);
     }
 
-    function populateSelect(elemId, list, hasEmptyOpt, emptyText) {
+    function populateSelect(elemId, list, hasEmptyOpt, emptyText, useNameAsVal) {
       const el = document.getElementById(elemId);
       if (!el) return;
+      const currentSelected = el.value;
       el.innerHTML = '';
       if (hasEmptyOpt) el.innerHTML += `<option value="">${emptyText || '-- Pilih --'}</option>`;
       if (list && Array.isArray(list)) {
         list.forEach(i => {
-          const val = i.code || i.id || i;
-          const name = i.name || i;
+          if (!i) return;
+          const name = typeof i === 'object' ? (i.name || i.ReferenceName || i.code || i.id || '') : String(i);
+          if (!name || name.startsWith('--')) return;
+          const val = useNameAsVal ? name : (typeof i === 'object' ? (i.name || i.code || i.id || name) : String(i));
+          if (val === '' && hasEmptyOpt) return;
           el.innerHTML += `<option value="${val}">${name}</option>`;
         });
+      }
+      if (currentSelected) {
+        el.value = currentSelected;
       }
     }
 
@@ -5863,6 +5982,24 @@
     </div>
   </div>
 
+<script>
+    // TOGGLE PASSWORD VISIBILITY
+    document.addEventListener('DOMContentLoaded', () => {
+      const togglePasswordBtn = document.getElementById('togglePassword');
+      const passwordInput = document.getElementById('login-password');
+      const eyeOffIcon = document.getElementById('eyeOffIcon');
+      const eyeOnIcon = document.getElementById('eyeOnIcon');
+
+      if (togglePasswordBtn && passwordInput) {
+        togglePasswordBtn.addEventListener('click', () => {
+          const isPassword = passwordInput.type === 'password';
+          passwordInput.type = isPassword ? 'text' : 'password';
+          if (eyeOffIcon) eyeOffIcon.classList.toggle('hidden', isPassword);
+          if (eyeOnIcon) eyeOnIcon.classList.toggle('hidden', !isPassword);
+        });
+      }
+    });
+</script>
 </body>
           </html>
         `;
