@@ -592,241 +592,199 @@
        ========================================================================== -->
   <div id="app-container">
 
-    <!-- ================= AUTHENTICATION VIEW (100% PERSIS MOCKUP WEB & MOBILE) ================= -->
-    <div id="auth-page" class="fixed inset-0 z-50 bg-gradient-to-br from-[#007685] via-[#008b94] to-[#009aa6] overflow-y-auto select-none">
+    <!-- ================= AUTHENTICATION VIEW (SPLIT DESKTOP & AMBIENT MOBILE) ================= -->
+    <div id="auth-page" class="fixed inset-0 z-50 overflow-y-auto select-none bg-gradient-to-b from-[#EBF5FB] via-[#F4F9FD] to-[#E5EFF8] lg:bg-slate-50 text-slate-800 antialiased selection:bg-teal-500 selection:text-white">
       
-      <!-- BACKGROUND AMBIENT & WAVE SWOOSHES -->
-      <div class="pointer-events-none absolute inset-0 overflow-hidden z-0">
-        <!-- Ambient Radial Glow -->
-        <div class="absolute -top-32 -right-32 w-[500px] h-[500px] bg-cyan-300/15 rounded-full blur-3xl"></div>
-        <div class="absolute top-1/2 -left-40 w-[450px] h-[450px] bg-teal-300/10 rounded-full blur-3xl"></div>
-        
-        <!-- Elegant Background Waves (Desktop) -->
-        <svg class="hidden md:block absolute inset-0 w-full h-full opacity-20" viewBox="0 0 1440 900" fill="none" preserveAspectRatio="none">
-          <path d="M-100 200 C300 120 700 350 1540 180 L1540 900 L-100 900 Z" fill="#ffffff" opacity="0.1"/>
-          <path d="M-100 450 C400 320 850 560 1540 380 L1540 900 L-100 900 Z" fill="#00606b" opacity="0.25"/>
-        </svg>
+      <main class="min-h-screen flex w-full">
+        <!-- ================= BEGIN: LeftHeroSection (Desktop / Laptop Only - Split Screen) ================= -->
+        <section class="hidden lg:flex lg:w-7/12 xl:w-3/5 bg-gradient-to-br from-[#0B3C49] via-[#006D77] to-[#028090] text-white flex-col justify-between p-10 xl:p-14 relative overflow-hidden select-none" data-purpose="brand-hero">
+          <!-- Ambient background decoration -->
+          <div class="absolute inset-0 bg-islamic-pattern pointer-events-none opacity-40"></div>
+          <div class="absolute inset-0 hero-glow pointer-events-none"></div>
 
-        <!-- PITA GELOMBANG KUNING EMAS DI BAGIAN BAWAH LAYAR (PERSIS MOCKUP) -->
-        <div class="absolute bottom-0 left-0 right-0 h-16 sm:h-24 md:h-28 overflow-hidden z-0">
-          <svg viewBox="0 0 1440 160" preserveAspectRatio="none" class="w-full h-full">
-            <path d="M-50,160 C320,110 720,150 1490,40 L1490,160 Z" fill="#00636d" opacity="0.5"/>
-            <path d="M-50,160 C280,95 680,135 1490,20 L1490,55 C680,170 280,130 -50,160 Z" fill="#f59e0b" opacity="0.95"/>
-            <path d="M-50,160 C240,85 640,125 1490,5 L1490,20 C640,140 240,100 -50,160 Z" fill="#fbbf24" opacity="0.75"/>
-          </svg>
-        </div>
-      </div>
-
-      <div class="min-h-full w-full flex flex-col md:grid md:grid-cols-12 md:items-center md:justify-center p-0 md:p-8 lg:p-14 relative z-10">
-
-        <!-- ================= SISI KIRI: BRANDING HERO & ILUSTRASI 3D BUKU (DESKTOP MODE) ================= -->
-        <div class="hidden md:flex md:col-span-7 lg:col-span-7 flex-col justify-center px-6 lg:px-12 text-left relative z-10">
-          <div class="space-y-2">
-            <h1 class="text-5xl lg:text-6xl font-black text-white tracking-tight drop-shadow-sm font-heading">AJAR</h1>
-            <h2 class="text-2xl lg:text-3xl font-bold text-white leading-snug drop-shadow-xs font-heading">Administrasi & Jurnal Aktivitas Mengajar</h2>
-            <p class="text-white/90 text-sm lg:text-base mt-3 max-w-lg leading-relaxed font-medium">
-              Kelola administrasi dan jurnal aktivitas mengajar dengan lebih mudah, cepat dan terintergrasi.
-            </p>
-          </div>
-
-          <!-- ILUSTRASI 3D BUKU, BAR CHART & PANAH EMAS (DESKTOP) -->
-          <div class="py-4">
-            <svg class="w-full max-w-[380px] lg:max-w-[430px] h-auto drop-shadow-[0_20px_30px_rgba(0,40,50,0.35)] my-2" viewBox="0 0 500 360" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <filter id="deskBookShadowFilter" x="40" y="240" width="420" height="90" filterUnits="userSpaceOnUse">
-                  <feGaussianBlur stdDeviation="15" result="blur"/>
-                  <feColorMatrix type="matrix" values="0 0 0 0 0.005 0 0 0 0 0.2 0 0 0 0 0.25 0 0 0 0.45 0"/>
-                </filter>
-                <linearGradient id="deskPageLeftG" x1="100" y1="120" x2="250" y2="250" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stop-color="#ffffff"/>
-                  <stop offset="80%" stop-color="#f8fafc"/>
-                  <stop offset="100%" stop-color="#e2e8f0"/>
-                </linearGradient>
-                <linearGradient id="deskPageRightG" x1="400" y1="120" x2="250" y2="250" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stop-color="#ffffff"/>
-                  <stop offset="80%" stop-color="#f8fafc"/>
-                  <stop offset="100%" stop-color="#e2e8f0"/>
-                </linearGradient>
-                <linearGradient id="deskArrowG" x1="315" y1="230" x2="455" y2="60" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stop-color="#f59e0b"/>
-                  <stop offset="60%" stop-color="#fbbf24"/>
-                  <stop offset="100%" stop-color="#fef08a"/>
-                </linearGradient>
-              </defs>
-
-              <!-- BAYANGAN BAWAH BUKU -->
-              <ellipse cx="250" cy="285" rx="175" ry="24" fill="#00353d" opacity="0.38" filter="url(#deskBookShadowFilter)"/>
-
-              <!-- 3-STEP GROWTH BARS (DI BELAKANG HALAMAN KANAN) -->
-              <!-- Bar 1 (Pendek) -->
-              <g transform="translate(330, 160)">
-                <path d="M0 45 L15 35 L15 75 L0 85 Z" fill="#b45309"/>
-                <path d="M15 35 L30 45 L30 85 L15 75 Z" fill="#d97706"/>
-                <path d="M0 45 L15 35 L30 45 L15 55 Z" fill="#fbbf24"/>
-              </g>
-              <!-- Bar 2 (Sedang) -->
-              <g transform="translate(365, 125)">
-                <path d="M0 45 L15 35 L15 110 L0 120 Z" fill="#9a3412"/>
-                <path d="M15 35 L30 45 L30 120 L15 110 Z" fill="#d97706"/>
-                <path d="M0 45 L15 35 L30 45 L15 55 Z" fill="#f59e0b"/>
-              </g>
-              <!-- Bar 3 (Tinggi) -->
-              <g transform="translate(400, 85)">
-                <path d="M0 45 L15 35 L15 150 L0 160 Z" fill="#7c2d12"/>
-                <path d="M15 35 L30 45 L30 160 L15 150 Z" fill="#c2410c"/>
-                <path d="M0 45 L15 35 L30 45 L15 55 Z" fill="#fb923c"/>
-              </g>
-
-              <!-- 3D UPWARD CURVED GROWTH ARROW (PANAH EMAS 3D PERSPEKTIF) -->
-              <g>
-                <path d="M315 220 C340 180 375 130 425 80 L445 95 C395 145 360 195 330 235 Z" fill="#d97706"/>
-                <path d="M320 215 C345 175 380 125 430 75 L445 90 C395 140 360 190 335 230 Z" fill="url(#deskArrowG)"/>
-                <path d="M410 70 L470 50 L450 110 L435 90 L410 70 Z" fill="#b45309"/>
-                <path d="M415 65 L470 50 L435 85 L415 65 Z" fill="#fde047"/>
-                <path d="M470 50 L450 110 L435 85 L470 50 Z" fill="#f59e0b"/>
-              </g>
-
-              <!-- SAMPUL DASAR BUKU TEAL 3D -->
-              <path d="M70 215 C130 235 195 245 250 250 C305 245 370 235 430 215 C440 240 380 265 250 275 C120 265 60 240 70 215 Z" fill="#004d57"/>
-              <path d="M75 210 C135 230 195 240 250 245 C305 240 365 230 425 210 L428 225 C368 245 305 255 250 260 C195 255 132 245 72 225 Z" fill="#008b94"/>
-
-              <!-- KETEBALAN TUMPUKAN KERTAS -->
-              <path d="M85 205 C140 223 195 233 248 238 L248 248 C195 243 140 233 82 215 Z" fill="#cbd5e1"/>
-              <path d="M415 205 C360 223 305 233 252 238 L252 248 C305 243 360 233 418 215 Z" fill="#94a3b8"/>
-              <path d="M92 195 C145 213 198 223 250 228 C302 223 355 213 408 195 L412 205 C359 223 304 233 250 238 C196 233 141 223 88 205 Z" fill="#e2e8f0"/>
-
-              <!-- HALAMAN BUKU TERBUKA (PUTIH BERSIH PERSIS MOCKUP) -->
-              <path d="M250 235 C190 230 130 215 80 185 C95 145 130 115 180 100 C210 120 235 170 250 235 Z" fill="#e2e8f0"/>
-              <path d="M248 232 C192 228 135 212 85 182 C100 142 135 112 185 98 C215 118 238 168 248 232 Z" fill="url(#deskPageLeftG)"/>
-              <path d="M185 98 C198 108 218 140 235 195 C230 195 215 192 198 185 C175 140 160 115 185 98 Z" fill="#ffffff" opacity="0.6"/>
-
-              <path d="M250 235 C310 230 370 215 420 185 C405 145 370 115 320 100 C290 120 265 170 250 235 Z" fill="#cbd5e1"/>
-              <path d="M252 232 C308 228 365 212 415 182 C400 142 365 112 315 98 C285 118 262 168 252 232 Z" fill="url(#deskPageRightG)"/>
-              <path d="M315 98 C302 108 282 140 265 195 C270 195 285 192 302 185 C325 140 340 115 315 98 Z" fill="#ffffff" opacity="0.6"/>
-
-              <!-- LIPATAN TENGAH BUKU -->
-              <path d="M247 98 L253 98 L252 238 L248 238 Z" fill="#005f73" opacity="0.25"/>
-              <path d="M249 98 L251 98 L251 242 L249 242 Z" fill="#003844" opacity="0.4"/>
-            </svg>
-          </div>
-        </div>
-
-        <!-- ================= SISI KANAN / MOBILE VIEW: FLOATING WHITE LOGIN CARD ================= -->
-        <div class="w-full max-w-sm sm:max-w-md mx-auto md:max-w-none md:col-span-5 lg:col-span-5 relative z-10 mt-auto md:my-auto flex flex-col justify-end min-h-screen md:min-h-0">
-          
-          <!-- MOBILE HERO HEADER (HANYA AKTIF PADA LAYAR PONSEL < 768PX) -->
-          <div class="flex md:hidden flex-col items-center text-center pt-8 pb-3 px-4 flex-1 justify-center">
-            <h1 class="text-3xl font-black text-white tracking-wider drop-shadow-sm font-heading">AJAR</h1>
-            <p class="text-xs font-semibold text-white/90 mt-1 leading-snug">
-              Administrasi & Jurnal<br>Aktivitas Mengajar
-            </p>
-            
-            <!-- ILUSTRASI 3D BUKU MOBILE -->
-            <div class="py-2 scale-90">
-              <svg class="w-full max-w-[240px] h-auto drop-shadow-[0_15px_25px_rgba(0,40,50,0.35)]" viewBox="0 0 500 360" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <ellipse cx="250" cy="285" rx="175" ry="24" fill="#00353d" opacity="0.38"/>
-                <!-- Bar 1, 2, 3 -->
-                <g transform="translate(330, 160)">
-                  <path d="M0 45 L15 35 L15 75 L0 85 Z" fill="#b45309"/>
-                  <path d="M15 35 L30 45 L30 85 L15 75 Z" fill="#d97706"/>
-                  <path d="M0 45 L15 35 L30 45 L15 55 Z" fill="#fbbf24"/>
-                </g>
-                <g transform="translate(365, 125)">
-                  <path d="M0 45 L15 35 L15 110 L0 120 Z" fill="#9a3412"/>
-                  <path d="M15 35 L30 45 L30 120 L15 110 Z" fill="#d97706"/>
-                  <path d="M0 45 L15 35 L30 45 L15 55 Z" fill="#f59e0b"/>
-                </g>
-                <g transform="translate(400, 85)">
-                  <path d="M0 45 L15 35 L15 150 L0 160 Z" fill="#7c2d12"/>
-                  <path d="M15 35 L30 45 L30 160 L15 150 Z" fill="#c2410c"/>
-                  <path d="M0 45 L15 35 L30 45 L15 55 Z" fill="#fb923c"/>
-                </g>
-                <!-- Panah Emas -->
-                <g>
-                  <path d="M315 220 C340 180 375 130 425 80 L445 95 C395 145 360 195 330 235 Z" fill="#d97706"/>
-                  <path d="M320 215 C345 175 380 125 430 75 L445 90 C395 140 360 190 335 230 Z" fill="#fbbf24"/>
-                  <path d="M410 70 L470 50 L450 110 L435 90 L410 70 Z" fill="#b45309"/>
-                  <path d="M415 65 L470 50 L435 85 L415 65 Z" fill="#fde047"/>
-                  <path d="M470 50 L450 110 L435 85 L470 50 Z" fill="#f59e0b"/>
-                </g>
-                <!-- Sampul & Kertas -->
-                <path d="M70 215 C130 235 195 245 250 250 C305 245 370 235 430 215 C440 240 380 265 250 275 C120 265 60 240 70 215 Z" fill="#004d57"/>
-                <path d="M75 210 C135 230 195 240 250 245 C305 240 365 230 425 210 L428 225 C368 245 305 255 250 260 C195 255 132 245 72 225 Z" fill="#008b94"/>
-                <path d="M92 195 C145 213 198 223 250 228 C302 223 355 213 408 195 L412 205 C359 223 304 233 250 238 C196 233 141 223 88 205 Z" fill="#e2e8f0"/>
-                <path d="M248 232 C192 228 135 212 85 182 C100 142 135 112 185 98 C215 118 238 168 248 232 Z" fill="#ffffff"/>
-                <path d="M252 232 C308 228 365 212 415 182 C400 142 365 112 315 98 C285 118 262 168 252 232 Z" fill="#f8fafc"/>
-                <path d="M249 98 L251 98 L251 242 L249 242 Z" fill="#003844" opacity="0.4"/>
-              </svg>
+          <!-- Top Branding: Logo & Tagline -->
+          <div class="relative z-10 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 flex items-center justify-center p-2 shadow-lg">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/9/9c/Logo_Kemenag.png" alt="Kemenag" class="w-8 h-8 object-contain">
+            </div>
+            <div>
+              <span class="inline-block px-3 py-1 bg-white/15 backdrop-blur-sm border border-white/20 text-xs font-semibold uppercase tracking-wider rounded-full text-teal-100">
+                Kementerian Agama RI
+              </span>
+              <p class="text-xs text-teal-100/80 mt-1 font-medium tracking-wide">Kantor Wilayah Kabupaten Majalengka</p>
             </div>
           </div>
 
-          <!-- KARTU FORM PUTIH BERSIH (PERSIS MOCKUP) -->
-          <div class="bg-white rounded-t-[32px] md:rounded-3xl p-6 sm:p-8 md:p-9 shadow-2xl border-t md:border border-white/60 relative overflow-hidden text-slate-800">
-            
-            <!-- FORM LOGIN VIEW -->
-            <div id="login-form-view" class="space-y-4">
-              <div class="pb-1">
-                <h2 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-heading">Masuk ke AJAR</h2>
-                <p class="text-xs sm:text-sm text-slate-500 mt-1 font-medium">Silakan login untuk melanjutkan ke aplikasi.</p>
-              </div>
-
-              <!-- FIELD USERNAME (DENGAN IKON PROFIL SESUAI MOCKUP) -->
-              <div id="field-wrap-login-username">
-                <div class="relative flex items-center border border-slate-200 rounded-2xl px-3.5 bg-slate-50/70 focus-within:bg-white focus-within:border-[#008b94] focus-within:ring-2 focus-within:ring-[#008b94]/20 transition-all">
-                  <svg class="w-5 h-5 text-slate-400 mr-2.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                  </svg>
-                  <input type="text" id="login-username" oninput="clearInputError('login-username')" class="w-full bg-transparent border-0 text-slate-900 text-sm font-semibold placeholder-slate-400 py-3.5 outline-none" placeholder="Username">
-                </div>
-                <p id="hint-login-username" class="micro-hint text-[11px] text-red-500 font-bold mt-1.5 hidden"></p>
-              </div>
-
-              <!-- FIELD PASSWORD (DENGAN IKON GEMBOK & TOGGLE MATA SESUAI MOCKUP) -->
-              <div id="field-wrap-login-password">
-                <div class="relative flex items-center border border-slate-200 rounded-2xl px-3.5 bg-slate-50/70 focus-within:bg-white focus-within:border-[#008b94] focus-within:ring-2 focus-within:ring-[#008b94]/20 transition-all">
-                  <svg class="w-5 h-5 text-slate-400 mr-2.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                  </svg>
-                  <input type="password" id="login-password" oninput="clearInputError('login-password')" class="w-full bg-transparent border-0 text-slate-900 text-sm font-semibold placeholder-slate-400 py-3.5 pr-8 outline-none" placeholder="Password">
-                  <button type="button" onclick="togglePassword('login-password')" class="absolute right-3 text-slate-400 hover:text-[#008b94] p-1 focus:outline-none transition-colors" aria-label="Toggle Password">
-                    <svg id="eye-open-login-password" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                    <svg id="eye-closed-login-password" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
-                  </button>
-                </div>
-                <p id="hint-login-password" class="micro-hint text-[11px] text-red-500 font-bold mt-1.5 hidden"></p>
-              </div>
-
-              <!-- CHECKBOX REMEMBER ME -->
-              <div class="flex items-center justify-between pt-0.5">
-                <label class="flex items-center space-x-2 text-xs font-semibold text-slate-500 cursor-pointer select-none">
-                  <input type="checkbox" id="login-remember" checked class="w-4 h-4 rounded text-[#008b94] focus:ring-[#008b94] border-slate-300">
-                  <span>Ingat Saya / Tetap Masuk</span>
-                </label>
-              </div>
-
-              <!-- TOMBOL UTAMA: LOGIN → (PERSIS MOCKUP) -->
-              <button id="btn-login-submit" onclick="handleLogin()" class="touch-btn w-full rounded-2xl py-3.5 bg-[#008b94] hover:bg-[#00747d] active:scale-[0.98] text-white font-extrabold text-sm sm:text-base shadow-lg shadow-[#008b94]/25 flex items-center justify-center gap-2 transition-all mt-4 font-heading">
-                <span>Login</span>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                </svg>
-              </button>
-
-              <!-- TOMBOL SIGN UP (TETAP ADA SESUAI PERMINTAAN) -->
-              <button type="button" id="btn-goto-signup" onclick="showRegisterView(true)" class="touch-btn w-full rounded-2xl py-3 border border-[#008b94]/40 text-[#008b94] hover:bg-[#008b94]/10 active:scale-[0.98] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all mt-2.5">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
-                </svg>
-                <span>Sign Up (Daftar Akun Baru)</span>
-              </button>
-
-              <p class="text-[11px] text-slate-400 text-center font-medium pt-1">
-                MAN 1 Majalengka &bull; Tahun Ajaran Aktif
+          <!-- Central Hero Content: Title & Digital Education Graphics -->
+          <div class="relative z-10 my-auto py-6">
+            <!-- Big Brand Title -->
+            <div class="text-left mb-6">
+              <h1 class="text-6xl xl:text-7xl font-extrabold tracking-tight text-white mb-2 leading-none flex items-center gap-3">
+                <span class="text-[#fde047]">A</span>JAR
+              </h1>
+              <p class="text-lg xl:text-xl font-medium text-teal-100 leading-snug">
+                Administrasi &amp; Jurnal Aktivitas Mengajar
+              </p>
+              <p class="text-base font-semibold tracking-wider text-teal-200 mt-1 uppercase">
+                MAN 1 MAJALENGKA
               </p>
             </div>
 
-            <!-- FORM REGISTRASI GURU VIEW (TERBUKA KETIKA KLIK SIGN UP) -->
-            <div id="register-form-view" class="space-y-3.5 hidden">
+            <!-- Modern Educational Digital Illustration -->
+            <div class="mt-6 max-w-lg bg-white/10 backdrop-blur-md rounded-3xl p-6 border border-white/20 shadow-2xl relative" data-purpose="hero-illustration">
+              <div class="bg-slate-900/40 rounded-2xl p-5 border border-white/10 backdrop-blur-sm">
+                <div class="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
+                  <div class="flex gap-2">
+                    <div class="w-3 h-3 rounded-full bg-rose-500/80"></div>
+                    <div class="w-3 h-3 rounded-full bg-amber-500/80"></div>
+                    <div class="w-3 h-3 rounded-full bg-emerald-500/80"></div>
+                  </div>
+                  <div class="flex items-center gap-2 text-xs text-teal-200/80 font-mono">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                    Portal Guru Aktif
+                  </div>
+                </div>
+
+                <!-- Workspace Mock -->
+                <div class="grid grid-cols-12 gap-3 items-center">
+                  <div class="col-span-8 bg-slate-800/90 rounded-xl p-3 border border-teal-500/30">
+                    <div class="h-24 bg-gradient-to-tr from-teal-950 to-slate-800 rounded-lg flex items-center justify-center relative overflow-hidden">
+                      <div class="flex flex-col items-center">
+                        <div class="w-9 h-9 rounded-full bg-teal-500/30 border border-teal-300 flex items-center justify-center text-[#fde047] mb-1">
+                          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        </div>
+                        <span class="text-[10px] text-teal-200 font-medium">Bpk. H. Ahmad Fauzi, M.Pd</span>
+                      </div>
+                      <div class="absolute right-2 top-2 bg-emerald-500/20 px-2 py-0.5 rounded text-[9px] text-emerald-300 font-mono border border-emerald-500/30">
+                        Jurnal #084
+                      </div>
+                    </div>
+                    <div class="mt-2 flex items-center justify-between text-[11px] text-slate-300">
+                      <span>Materi: Fikih Madrasah</span>
+                      <span class="text-emerald-400 font-medium">Terverifikasi ✓</span>
+                    </div>
+                  </div>
+
+                  <div class="col-span-4 flex flex-col gap-2">
+                    <div class="bg-teal-700/40 border border-teal-400/20 p-2.5 rounded-xl text-center">
+                      <span class="block text-xl font-bold text-white">100%</span>
+                      <span class="text-[10px] text-teal-200">Presensi Guru</span>
+                    </div>
+                    <div class="bg-teal-700/40 border border-teal-400/20 p-2.5 rounded-xl text-center">
+                      <span class="block text-xl font-bold text-amber-300">42</span>
+                      <span class="text-[10px] text-teal-200">Rombel Belajar</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bottom floating badge -->
+              <div class="mt-4 flex items-center justify-between text-xs text-teal-100/90 px-1">
+                <span class="flex items-center gap-1.5">
+                  <svg class="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path clip-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" fill-rule="evenodd"/></svg>
+                  Sistem Jurnal Terintegrasi EMIS &amp; Simpatika
+                </span>
+                <span class="text-[11px] bg-amber-400/20 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-400/30 font-semibold">T.A 2026/2027</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hero Footer Quote -->
+          <div class="relative z-10 pt-4 border-t border-white/10 flex items-center justify-between">
+            <p class="text-xs text-teal-100 italic">
+              “Mewujudkan Madrasah Mandiri Berprestasi, Maju, Bermutu, dan Mendunia.”
+            </p>
+          </div>
+        </section>
+        <!-- ================= END: LeftHeroSection ================= -->
+
+        <!-- ================= BEGIN: RightAuthSection (Desktop & Mobile) ================= -->
+        <section class="w-full lg:w-5/12 xl:w-2/5 flex flex-col justify-between p-5 sm:p-8 md:p-10 lg:p-12 relative overflow-hidden" data-purpose="login-form-container">
+          <!-- Ambient Background Accents for Mobile -->
+          <div aria-hidden="true" class="lg:hidden absolute -top-20 -right-20 w-72 h-72 bg-gradient-to-br from-cyan-200/40 to-teal-400/20 rounded-full blur-3xl pointer-events-none"></div>
+          <div aria-hidden="true" class="lg:hidden absolute top-1/3 -left-28 w-64 h-64 bg-teal-200/25 rounded-full blur-3xl pointer-events-none"></div>
+
+          <!-- Mobile School Header (Visible on smaller screens only) -->
+          <header class="lg:hidden relative z-10 flex flex-col items-center text-center pt-3 pb-3" data-purpose="mobile-header">
+            <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-800">
+              <span class="text-[#0A4D68]">A</span><span class="text-[#088395]">JAR</span>
+            </h1>
+            <p class="text-[12px] font-semibold text-slate-600 mt-0.5 max-w-[260px] leading-snug">
+              Administrasi &amp; Jurnal Aktivitas Mengajar
+            </p>
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/5 border border-slate-300/40 shadow-xs mt-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span class="text-[10px] font-bold tracking-wider uppercase text-slate-700">MAN 1 MAJALENGKA</span>
+            </div>
+          </header>
+
+          <!-- Center Wrapper for Clean Auth Card -->
+          <div class="relative z-10 my-auto w-full max-w-md mx-auto">
+            <div class="bg-white/95 backdrop-blur-md rounded-3xl p-6 sm:p-8 border border-white/80 ring-1 ring-slate-100 auth-card-shadow">
+              
+              <!-- ================= LOGIN FORM VIEW ================= -->
+              <div id="login-form-view" class="space-y-4">
+                <div class="mb-4 text-center sm:text-left">
+                  <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Welcome</h2>
+                  <p class="text-xs text-slate-500 mt-0.5">Akses Guru &amp; Tenaga Pendidik</p>
+                </div>
+
+                <form action="#" class="space-y-3.5" method="POST" onsubmit="event.preventDefault(); handleLogin();">
+                  <!-- Username / NIP Field -->
+                  <div class="space-y-1.5" id="field-wrap-login-username">
+                    <label class="block text-xs font-semibold text-slate-700" for="login-username">Username / NIP</label>
+                    <div class="relative rounded-2xl shadow-xs transition-all focus-within:ring-2 focus-within:ring-[#088395]/40">
+                      <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      </div>
+                      <input autocomplete="username" class="block w-full rounded-xl border border-slate-200 bg-slate-50/60 pl-10 pr-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:border-[#088395] focus:bg-white focus:outline-none transition duration-150" id="login-username" name="username" placeholder="Masukkan NIP" required="" type="text" oninput="clearInputError('login-username')">
+                    </div>
+                    <p id="hint-login-username" class="micro-hint text-[11px] text-red-500 font-bold mt-1 hidden"></p>
+                  </div>
+
+                  <!-- Password Field -->
+                  <div class="space-y-1.5" id="field-wrap-login-password">
+                    <label class="block text-xs font-semibold text-slate-700" for="login-password">Password</label>
+                    <div class="relative rounded-2xl shadow-xs transition-all focus-within:ring-2 focus-within:ring-[#088395]/40">
+                      <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24"><rect height="11" rx="2" ry="2" width="18" x="3" y="11"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                      </div>
+                      <input autocomplete="current-password" class="block w-full rounded-xl border border-slate-200 bg-slate-50/60 pl-10 pr-11 py-3 text-sm text-slate-800 placeholder-slate-400 focus:border-[#088395] focus:bg-white focus:outline-none transition duration-150" id="login-password" name="password" placeholder="••••••••••••" required="" type="password" oninput="clearInputError('login-password')">
+                      <!-- Password Toggle Visibility Button -->
+                      <button aria-label="Tampilkan atau sembunyikan kata sandi" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none" onclick="togglePassword('login-password')" type="button">
+                        <svg class="h-5 w-5" fill="none" id="eye-closed-login-password" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <svg class="h-5 w-5 hidden" fill="none" id="eye-open-login-password" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                      </button>
+                    </div>
+                    <p id="hint-login-password" class="micro-hint text-[11px] text-red-500 font-bold mt-1 hidden"></p>
+                  </div>
+
+                  <!-- Options Row: Remember Me -->
+                  <div class="flex items-center justify-between pt-1 text-xs">
+                    <label class="flex items-center gap-2 cursor-pointer select-none text-slate-600 hover:text-slate-900">
+                      <input class="w-4 h-4 rounded border-slate-300 text-[#088395] focus:ring-[#088395]/30 focus:ring-offset-0 transition" id="login-remember" name="rememberMe" type="checkbox" checked>
+                      <span>Ingat Saya / Tetap Masuk</span>
+                    </label>
+                  </div>
+
+                  <!-- Submit Button -->
+                  <button id="btn-login-submit" onclick="handleLogin()" class="w-full mt-2 py-3.5 px-4 rounded-xl font-semibold text-white bg-gradient-to-r from-[#088395] to-[#0C92A6] hover:from-[#077484] hover:to-[#088395] active:scale-[0.985] shadow-btn-glow transition duration-200 flex items-center justify-center gap-2 text-base" type="button">
+                    <span>Masuk ke Portal</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                </form>
+
+                <!-- Tombol Sign Up / Daftar Akun -->
+                <div class="mt-5 pt-4 border-t border-slate-100 text-center text-xs text-slate-500">
+                  Belum punya akun?
+                  <button type="button" id="btn-goto-signup" onclick="showRegisterView(true)" class="font-bold text-[#088395] hover:text-[#0A4D68] hover:underline ml-1">
+                    Daftar Akun Baru
+                  </button>
+                </div>
+              </div>
+
+              <!-- ================= REGISTER FORM VIEW ================= -->
+              <div id="register-form-view" class="space-y-3.5 hidden">
               <div class="pb-1 text-center">
                 <h2 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-heading">Daftar Akun Baru</h2>
                 <p class="text-xs text-slate-500 mt-1 font-medium">Lengkapi formulir pendaftaran guru di bawah ini.</p>
@@ -920,13 +878,20 @@
                 <span>Sudah punya akun? Kembali ke Login</span>
               </button>
             </div>
-
+            </div>
           </div>
-        </div>
-      </div>
+
+          <!-- Legal Institutional Footer -->
+          <footer class="relative z-10 pt-4 pb-1 text-center text-xs text-slate-400" data-purpose="app-footer">
+            <p>© 2026 <strong>MAN 1 Majalengka</strong></p>
+            <p class="text-[11px] text-slate-400/80 mt-0.5">Sistem Administrasi &amp; Jurnal Aktivitas Mengajar</p>
+          </footer>
+        </section>
+        <!-- ================= END: RightAuthSection ================= -->
+      </main>
     </div>
 
-        <!-- ================= DESKTOP SIDEBAR NAVIGATION (SLEEK SAAS, >= 768px) ================= -->
+    <!-- ================= DESKTOP SIDEBAR NAVIGATION (SLEEK SAAS, >= 768px) ================= -->
     <aside id="desktop-sidebar" class="flex-col w-64 lg:w-72 bg-[#001c24]/95 backdrop-blur-2xl border-r border-teal-500/20 text-white shrink-0 z-30 select-none justify-between h-full p-4 overflow-y-auto no-scrollbar">
       <div class="space-y-6">
         <!-- Logo & Header Brand -->
@@ -5982,24 +5947,6 @@
     </div>
   </div>
 
-<script>
-    // TOGGLE PASSWORD VISIBILITY
-    document.addEventListener('DOMContentLoaded', () => {
-      const togglePasswordBtn = document.getElementById('togglePassword');
-      const passwordInput = document.getElementById('login-password');
-      const eyeOffIcon = document.getElementById('eyeOffIcon');
-      const eyeOnIcon = document.getElementById('eyeOnIcon');
-
-      if (togglePasswordBtn && passwordInput) {
-        togglePasswordBtn.addEventListener('click', () => {
-          const isPassword = passwordInput.type === 'password';
-          passwordInput.type = isPassword ? 'text' : 'password';
-          if (eyeOffIcon) eyeOffIcon.classList.toggle('hidden', isPassword);
-          if (eyeOnIcon) eyeOnIcon.classList.toggle('hidden', !isPassword);
-        });
-      }
-    });
-</script>
 </body>
           </html>
         `;
