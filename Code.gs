@@ -524,11 +524,13 @@ function registerGuru(data) {
 
     var ss = getDbSpreadsheet();
     var sheetUsers = ss.getSheetByName('01_USERS');
+    if (!sheetUsers) return { success: false, message: 'Tabel Users belum siap.' };
+
     var users = getSheetDataAsObjects(sheetUsers);
     var cleanNip = String(data.nip).replace(/[^0-9]/g, '').trim();
 
     var existing = users.find(function(u) {
-      return String(u.NIP || '').replace(/[^0-9]/g, '') === cleanNip;
+      return String(u.NIP || u.nip || '').replace(/[^0-9]/g, '') === cleanNip;
     });
 
     if (existing) {
@@ -539,26 +541,58 @@ function registerGuru(data) {
     var hash = pbkdf2HmacSha256(data.password, salt, PBKDF2_ITERATIONS, 32);
     var userId = 'USR-' + Utilities.getUuid().substring(0, 8).toUpperCase();
     var now = new Date();
-    var namaTampilan = (data.gelarDepan ? data.gelarDepan + ' ' : '') + data.namaLengkap.trim() + (data.gelarBelakang ? ', ' + data.gelarBelakang : '');
+    var cleanGelarDepan = String(data.gelarDepan || '').trim();
+    var cleanGelarBelakang = String(data.gelarBelakang || '').trim();
+    var cleanNama = String(data.namaLengkap || '').trim();
+    var jabatanVal = String(data.jabatanId || data.jabatan || '').trim();
 
-    sheetUsers.appendRow([
-      userId,
-      data.gelarDepan || '',
-      data.namaLengkap.trim(),
-      data.gelarBelakang || '',
-      namaTampilan,
-      cleanNip,
-      'MAN 1 Majalengka',
-      data.jabatanId || '',
-      'GURU',
-      cleanNip,
-      hash,
-      salt,
-      '', '', '', '',
-      'Iyan Arif Hasyim, S.Pd, M.Pd',
-      'ACTIVE',
-      now, now, '', 2
-    ]);
+    var namaTampilan = (cleanGelarDepan ? cleanGelarDepan + ' ' : '') + cleanNama + (cleanGelarBelakang ? ', ' + cleanGelarBelakang : '');
+
+    var lastCol = Math.max(1, sheetUsers.getLastColumn());
+    var headers = sheetUsers.getRange(1, 1, 1, lastCol).getValues()[0];
+
+    if (headers && headers.length > 0 && headers[0]) {
+      var rowData = new Array(headers.length).fill('');
+      headers.forEach(function(header, idx) {
+        var h = String(header || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        if (h === 'userid') rowData[idx] = userId;
+        else if (h === 'gelardepan') rowData[idx] = cleanGelarDepan;
+        else if (h === 'namalengkap') rowData[idx] = cleanNama;
+        else if (h === 'gelarbelakang') rowData[idx] = cleanGelarBelakang;
+        else if (h === 'namatampilan') rowData[idx] = namaTampilan;
+        else if (h === 'nip') rowData[idx] = cleanNip;
+        else if (h === 'sekolah' || h === 'unitkerja') rowData[idx] = 'MAN 1 Majalengka';
+        else if (h === 'jabatanid' || h === 'jabatan') rowData[idx] = jabatanVal;
+        else if (h === 'role') rowData[idx] = 'GURU';
+        else if (h === 'username') rowData[idx] = cleanNip;
+        else if (h === 'passwordhash' || h === 'password') rowData[idx] = hash;
+        else if (h === 'passwordsalt' || h === 'salt') rowData[idx] = salt;
+        else if (h === 'namaatasan') rowData[idx] = 'Iyan Arif Hasyim, S.Pd, M.Pd';
+        else if (h === 'status') rowData[idx] = 'ACTIVE';
+        else if (h === 'createdat') rowData[idx] = now;
+        else if (h === 'updatedat') rowData[idx] = now;
+      });
+      sheetUsers.appendRow(rowData);
+    } else {
+      sheetUsers.appendRow([
+        userId,
+        cleanGelarDepan,
+        cleanNama,
+        cleanGelarBelakang,
+        namaTampilan,
+        cleanNip,
+        'MAN 1 Majalengka',
+        jabatanVal,
+        'GURU',
+        cleanNip,
+        hash,
+        salt,
+        '', '', '', '',
+        'Iyan Arif Hasyim, S.Pd, M.Pd',
+        'ACTIVE',
+        now, now, '', 2
+      ]);
+    }
 
     logActivity(userId, 'REGISTER', 'AUTH', 'Registrasi guru baru berhasil: ' + namaTampilan);
     return { success: true, message: 'Registrasi akun berhasil! Silakan login.' };
@@ -579,14 +613,31 @@ function getReferencesData() {
     }
 
     var ss = getDbSpreadsheet();
-    var refs = getSheetDataAsObjects(ss.getSheetByName('10_REFERENSI'));
+    var sheetRef = ss.getSheetByName('10_REFERENSI');
+    var refs = sheetRef ? getSheetDataAsObjects(sheetRef) : [];
     var map = { GelarDepan: [], GelarBelakang: [], Jabatan: [], MataPelajaran: [], Kelas: [], UraianKerja: [], Hasil: [] };
 
     refs.forEach(function(r) {
       if (String(r.Status || 'ACTIVE').toUpperCase() === 'ACTIVE') {
-        var type = r.ReferenceType;
-        if (map[type]) {
-          map[type].push({ id: r.ReferenceID, code: r.ReferenceCode, name: r.ReferenceName });
+        var rawType = String(r.ReferenceType || '').trim();
+        var cleanType = rawType.replace(/[^a-zA-Z]/g, '').toLowerCase();
+
+        var targetKey = null;
+        if (cleanType === 'gelardepan') targetKey = 'GelarDepan';
+        else if (cleanType === 'gelarbelakang') targetKey = 'GelarBelakang';
+        else if (cleanType === 'jabatan' || cleanType === 'jabatanguru') targetKey = 'Jabatan';
+        else if (cleanType === 'matapelajaran' || cleanType === 'mapel') targetKey = 'MataPelajaran';
+        else if (cleanType === 'kelas') targetKey = 'Kelas';
+        else if (cleanType === 'uraiankerja' || cleanType === 'uraian') targetKey = 'UraianKerja';
+        else if (cleanType === 'hasil') targetKey = 'Hasil';
+        else if (map[rawType]) targetKey = rawType;
+
+        if (targetKey && map[targetKey]) {
+          map[targetKey].push({
+            id: r.ReferenceID || r.id || '',
+            code: r.ReferenceCode || r.code || r.ReferenceName || '',
+            name: r.ReferenceName || r.name || r.ReferenceCode || ''
+          });
         }
       }
     });
