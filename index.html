@@ -2056,17 +2056,17 @@
         setTimeout(() => {
           banner.classList.remove('translate-y-8', 'opacity-0');
           banner.style.opacity = '1';
-        }, 50);
+        }, 30);
       }
     }
 
     function initPwaLaunch() {
       if (!isStandaloneApp()) {
-        setTimeout(showPwaPrompt, 1200);
+        setTimeout(showPwaPrompt, 1000);
       }
     }
 
-    // Auto-trigger pada setiap akses tautan di browser biasa
+    // Auto-trigger pada setiap akses tautan di browser biasa (termasuk di halaman login)
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
       initPwaLaunch();
     } else {
@@ -2078,7 +2078,10 @@
       const banner = document.getElementById('pwa-install-banner');
       if (banner) {
         banner.classList.add('translate-y-8', 'opacity-0');
-        setTimeout(() => banner.classList.add('hidden'), 300);
+        setTimeout(() => {
+          banner.classList.add('hidden');
+          banner.style.display = 'none';
+        }, 300);
       }
     }
 
@@ -2095,7 +2098,11 @@
         const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         if (isIos) {
           const m = document.getElementById('pwa-ios-modal');
-          if (m) { m.classList.remove('hidden'); m.classList.add('flex'); }
+          if (m) {
+            m.style.display = 'flex';
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+          }
         } else {
           showModernToast('Buka menu browser Anda (titik tiga) lalu pilih "Tambahkan ke Layar Utama" / "Instal Aplikasi".', 'info', 4000);
         }
@@ -2104,7 +2111,11 @@
 
     function closeIosPwaModal() {
       const m = document.getElementById('pwa-ios-modal');
-      if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
+      if (m) {
+        m.style.display = 'none';
+        m.classList.add('hidden');
+        m.classList.remove('flex');
+      }
     }
 
 
@@ -5932,56 +5943,7 @@
             
 
 
-  <!-- ================= TOP-LEVEL WORLD-CLASS PWA INSTALL PROMPT BANNER ================= -->
-  <div id="pwa-install-banner" class="fixed bottom-4 left-3 right-3 max-w-md mx-auto z-[999999] hidden transition-all duration-300 transform translate-y-8 opacity-0 pointer-events-auto">
-    <div class="bg-gradient-to-r from-[#002830] via-[#003844] to-[#004d40] border-2 border-teal-400/50 rounded-3xl p-4 shadow-2xl text-white backdrop-blur-2xl flex items-center justify-between space-x-3">
-      <div class="flex items-center space-x-3 min-w-0">
-        <div class="relative w-12 h-12 rounded-2xl bg-white/15 p-1 flex items-center justify-center shrink-0 border border-teal-300/40 shadow-md">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/9/9c/Logo_Kemenag.png" alt="AJAR" class="w-9 h-9 object-contain">
-        </div>
-        <div class="min-w-0">
-          <div class="flex items-center space-x-1.5">
-            <h5 class="text-xs font-black tracking-wide text-white">Instal AJAR</h5>
-            <span class="text-[9px] font-extrabold bg-[#fde047] text-slate-900 px-1.5 py-0.5 rounded-full">PWA</span>
-          </div>
-          <p class="text-[10px] text-white/90 line-clamp-1 mt-0.5">Akses cepat & layar penuh di HP Anda</p>
-        </div>
-      </div>
-      <div class="flex items-center space-x-2 shrink-0">
-        <button id="pwa-dismiss-btn" onclick="dismissPwaPrompt()" class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-white/70 hover:text-white transition-colors">
-          Nanti
-        </button>
-        <button id="pwa-install-btn" onclick="triggerPwaInstall()" class="px-4 py-2 rounded-xl bg-[#facc15] hover:bg-[#eab308] text-slate-900 text-xs font-black shadow-lg shadow-black/25 active:scale-95 transition-all flex items-center space-x-1">
-          <span>Pasang</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- iOS Safari Install Guide Modal -->
-  <div id="pwa-ios-modal" class="fixed inset-0 z-[999999] hidden items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-    <div class="bg-[#002830] border border-teal-500/30 text-white rounded-3xl p-5 max-w-sm w-full space-y-4 shadow-2xl">
-      <div class="flex items-center justify-between pb-2 border-b border-white/10">
-        <h5 class="text-xs font-black text-white flex items-center space-x-2">
-          <span>📲 Pasang di iPhone / iPad</span>
-        </h5>
-        <button onclick="closeIosPwaModal()" class="text-white/60 hover:text-white text-sm font-bold">✕</button>
-      </div>
-      <p class="text-xs text-white/80 leading-relaxed">
-        Untuk menginstal aplikasi AJAR ke Layar Utama iPhone/iPad Anda:
-      </p>
-      <ol class="text-xs text-white/90 space-y-2 list-decimal list-inside bg-white/10 p-3 rounded-2xl border border-white/10">
-        <li>Ketuk ikon <strong>Bagikan (Share)</strong> <span class="inline-block px-1 bg-white/20 rounded">⎋</span> di bawah layar browser Safari.</li>
-        <li>Pilih <strong>"Tambahkan ke Layar Utama" (Add to Home Screen)</strong> ➕.</li>
-        <li>Ketuk <strong>"Tambah"</strong> di pojok kanan atas.</li>
-      </ol>
-      <button onclick="closeIosPwaModal()" class="w-full py-2.5 rounded-2xl bg-[#facc15] text-slate-900 font-extrabold text-xs shadow-md">
-        Mengerti
-      </button>
-    </div>
-  </div>
-
-</body>
+  </body>
           </html>
         `;
       }
@@ -6441,5 +6403,54 @@
     }
 
   </script>
+
+  <!-- ================= TOP-LEVEL WORLD-CLASS PWA INSTALL PROMPT BANNER ================= -->
+  <div id="pwa-install-banner" class="fixed bottom-4 left-3 right-3 max-w-md mx-auto z-[999999] hidden transition-all duration-300 transform translate-y-8 opacity-0 pointer-events-auto">
+    <div class="bg-gradient-to-r from-[#002830] via-[#003844] to-[#004d40] border-2 border-teal-400/50 rounded-3xl p-4 shadow-2xl text-white backdrop-blur-2xl flex items-center justify-between space-x-3">
+      <div class="flex items-center space-x-3 min-w-0">
+        <div class="relative w-12 h-12 rounded-2xl bg-white/15 p-1 flex items-center justify-center shrink-0 border border-teal-300/40 shadow-md">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/9/9c/Logo_Kemenag.png" alt="AJAR" class="w-9 h-9 object-contain">
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center space-x-1.5">
+            <h5 class="text-xs font-black tracking-wide text-white">Instal AJAR</h5>
+            <span class="text-[9px] font-extrabold bg-[#fde047] text-slate-900 px-1.5 py-0.5 rounded-full">PWA</span>
+          </div>
+          <p class="text-[10px] text-white/90 line-clamp-1 mt-0.5">Akses cepat & layar penuh di HP Anda</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2 shrink-0">
+        <button id="pwa-dismiss-btn" onclick="dismissPwaPrompt()" class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-white/70 hover:text-white transition-colors">
+          Nanti
+        </button>
+        <button id="pwa-install-btn" onclick="triggerPwaInstall()" class="px-4 py-2 rounded-xl bg-[#facc15] hover:bg-[#eab308] text-slate-900 text-xs font-black shadow-lg shadow-black/25 active:scale-95 transition-all flex items-center space-x-1">
+          <span>Pasang</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- iOS Safari Install Guide Modal -->
+  <div id="pwa-ios-modal" class="fixed inset-0 z-[999999] hidden items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div class="bg-[#002830] border border-teal-500/30 text-white rounded-3xl p-5 max-w-sm w-full space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-2 border-b border-white/10">
+        <h5 class="text-xs font-black text-white flex items-center space-x-2">
+          <span>📲 Pasang di iPhone / iPad</span>
+        </h5>
+        <button onclick="closeIosPwaModal()" class="text-white/60 hover:text-white text-sm font-bold">✕</button>
+      </div>
+      <p class="text-xs text-white/80 leading-relaxed">
+        Untuk menginstal aplikasi AJAR ke Layar Utama iPhone/iPad Anda:
+      </p>
+      <ol class="text-xs text-white/90 space-y-2 list-decimal list-inside bg-white/10 p-3 rounded-2xl border border-white/10">
+        <li>Ketuk ikon <strong>Bagikan (Share)</strong> <span class="inline-block px-1 bg-white/20 rounded">⎋</span> di bawah layar browser Safari.</li>
+        <li>Pilih <strong>"Tambahkan ke Layar Utama" (Add to Home Screen)</strong> ➕.</li>
+        <li>Ketuk <strong>"Tambah"</strong> di pojok kanan atas.</li>
+      </ol>
+      <button onclick="closeIosPwaModal()" class="w-full py-2.5 rounded-2xl bg-[#facc15] text-slate-900 font-extrabold text-xs shadow-md">
+        Mengerti
+      </button>
+    </div>
+  </div>
 </body>
 </html>
