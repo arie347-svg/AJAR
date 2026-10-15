@@ -3,15 +3,42 @@
   "version": "1.0.0",
   "description": "Aplikasi Jurnal dan Administrasi Pembelajaran - MAN 1 Majalengka",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "vercel dev",
-    "deploy": "vercel --prod"
+    "dev": "tsx server.ts",
+    "build": "vite build",
+    "start": "node server.ts",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "jspdf": "^2.5.1",
+    "jspdf-autotable": "^3.8.2",
+    "lucide-react": "^1.16.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sweetalert2": "^11.16.1",
+    "tailwindcss": "^4.0.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0"
   },
   "keywords": [
     "ajar",
     "man-1-majalengka",
     "google-apps-script",
-    "vercel",
+    "react",
     "pwa"
   ],
   "author": "MAN 1 Majalengka",

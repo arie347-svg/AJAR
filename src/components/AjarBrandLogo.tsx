@@ -1,0 +1,77 @@
+import React from 'react';
+
+interface AjarBrandLogoProps {
+  className?: string;
+  idPrefix?: string;
+}
+
+export const AjarBrandLogo: React.FC<AjarBrandLogoProps> = ({
+  className = 'w-14 h-14 sm:w-16 sm:h-16',
+  idPrefix = 'ajarBrandLogo',
+}) => {
+  const eduGlow = `${idPrefix}_glow`;
+  const eduCapFrost = `${idPrefix}_frost`;
+  const eduDeep = `${idPrefix}_deep`;
+  const eduTassel = `${idPrefix}_tassel`;
+  const eduBookPage = `${idPrefix}_book`;
+
+  return (
+    <svg
+      className={`${className} filter drop-shadow-[0_8px_12px_rgba(23,84,223,0.32)]`}
+      fill="none"
+      viewBox="0 0 100 100"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id={eduGlow} x1="18" y1="14" x2="82" y2="86" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#60B5FF" />
+          <stop offset="45%" stopColor="#226BF5" />
+          <stop offset="100%" stopColor="#083DB8" />
+        </linearGradient>
+        <linearGradient id={eduCapFrost} x1="50" y1="16" x2="50" y2="46" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.95" />
+          <stop offset="35%" stopColor="#D6E6FF" stopOpacity="0.8" />
+          <stop offset="100%" stopColor="#89B9FF" stopOpacity="0.4" />
+        </linearGradient>
+        <linearGradient id={eduDeep} x1="25" y1="40" x2="75" y2="85" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#1B64F0" />
+          <stop offset="60%" stopColor="#0F44BA" />
+          <stop offset="100%" stopColor="#062378" />
+        </linearGradient>
+        <linearGradient id={eduTassel} x1="74" y1="32" x2="84" y2="64" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#A2CBFF" />
+          <stop offset="50%" stopColor="#3784FE" />
+          <stop offset="100%" stopColor="#0A3ED1" />
+        </linearGradient>
+        <linearGradient id={eduBookPage} x1="30" y1="64" x2="70" y2="84" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#F4F8FE" />
+          <stop offset="60%" stopColor="#D5E5FC" />
+          <stop offset="100%" stopColor="#A8CBFA" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M24 73C33 70 42 71.5 50 75C58 71.5 67 70 76 73C74 78 66 82 50 83C34 82 26 78 24 73Z"
+        fill={`url(#${eduDeep})`}
+      />
+      <path
+        d="M26 69C34 66 42 67.5 50 71C58 67.5 66 66 74 69C72 73.5 65 77 50 78C35 77 28 73.5 26 69Z"
+        fill={`url(#${eduBookPage})`}
+      />
+      <path
+        d="M31 43.5V52.5C31 59 39.5 64 50 64C60.5 64 69 59 69 52.5V43.5C64 47 57 49 50 49C43 49 36 47 31 43.5Z"
+        fill={`url(#${eduDeep})`}
+      />
+      <path d="M50 17L18 33L50 49L82 33L50 17Z" fill={`url(#${eduGlow})`} />
+      <path
+        d="M50 18.5L22 32.5L50 46.5L78 32.5L50 18.5Z"
+        fill={`url(#${eduCapFrost})`}
+        opacity="0.65"
+      />
+      <path
+        d="M74 33.5V49C73 52 70.5 54.5 70.5 57C70.5 60 72 63.5 72.5 65C73.5 64 74 60.5 74.5 57C75.5 54 77.5 51.5 76.5 49V34.8L74 33.5Z"
+        fill={`url(#${eduTassel})`}
+      />
+      <circle cx="50" cy="33" r="3" fill="#FFFFFF" opacity="0.9" />
+    </svg>
+  );
+};

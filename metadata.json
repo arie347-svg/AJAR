@@ -1,0 +1,7 @@
+{
+  "name": "AJAR - MAN 1 Majalengka",
+  "description": "Aplikasi Jurnal dan Administrasi Pembelajaran - MAN 1 Majalengka",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
