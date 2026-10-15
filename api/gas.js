@@ -14,7 +14,7 @@ module.exports = async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbzHRrmr1di7JHLr_cdRIc5fpptNc3cbwTe7hA4oMQ9ruJ70Lsu5pEJ8oSrcBd1hbkVPhg/exec';
+  const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbxo0zETjEVccRTmBB9x6TXAQm4MthVDItWKNYQtJVQFUTJfjLBQCg_74y_jfKE0IAVF/exec';
   const gasUrl = process.env.GAS_DEPLOYMENT_URL || DEFAULT_GAS_URL;
 
   // Support health-check / ping lewat GET

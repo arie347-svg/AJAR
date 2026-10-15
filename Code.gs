@@ -9,7 +9,7 @@ var SESSION_TTL_SECONDS = SESSION_TTL_HOURS * 3600;
 var CACHE_TTL_SECONDS = 6 * 3600; // 6 Jam CacheService
 var PBKDF2_ITERATIONS = 1000; 
 
-var DEFAULT_SPREADSHEET_ID = '16T29zB9SuYxSgMw84raGKnYtbu7MOp9VmvQoUPNlM6o';
+var DEFAULT_SPREADSHEET_ID = '1vxA0sZv30O_FMo196T4Es8R3Vs2gvXhnln3Zdu2gLY0';
 
 function getDbSpreadsheet() {
   var props = PropertiesService.getScriptProperties();
