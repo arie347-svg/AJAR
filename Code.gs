@@ -9,25 +9,92 @@ var SESSION_TTL_SECONDS = SESSION_TTL_HOURS * 3600;
 var CACHE_TTL_SECONDS = 6 * 3600; // 6 Jam CacheService
 var PBKDF2_ITERATIONS = 1000; 
 
+var DEFAULT_SPREADSHEET_ID = '16T29zB9SuYxSgMw84raGKnYtbu7MOp9VmvQoUPNlM6o';
+
 function getDbSpreadsheet() {
   var props = PropertiesService.getScriptProperties();
-  var dbId = props.getProperty('SPREADSHEET_ID');
+  var dbId = props ? props.getProperty('SPREADSHEET_ID') : null;
   if (!dbId) {
-    throw new Error('Spreadsheet ID belum dikonfigurasi pada Script Properties!');
+    dbId = DEFAULT_SPREADSHEET_ID;
   }
   return SpreadsheetApp.openById(dbId);
 }
 
-function doGet(e) {
-  // Jika diakses sebagai REST API ping / health-check
-  if (e && e.parameter && (e.parameter.api === '1' || e.parameter.ping === '1')) {
-    return ContentService.createTextOutput(JSON.stringify({
-      status: 'ok',
-      service: 'AJAR Google Apps Script API Gateway',
-      timestamp: new Date().toISOString()
-    })).setMimeType(ContentService.MimeType.JSON);
+/**
+ * Handler utama eksekusi API baik via POST maupun GET fallback
+ */
+function handleApiGateway(action, args) {
+  var publicApiMap = {
+    'loginUser': loginUser,
+    'registerGuru': registerGuru,
+    'getReferencesData': getReferencesData,
+    'getUserProfile': getUserProfile,
+    'updateProfile': updateProfile,
+    'uploadMediaFile': uploadMediaFile,
+    'getDashboardData': getDashboardData,
+    'getMasterAjarData': getMasterAjarData,
+    'saveMasterAjar': saveMasterAjar,
+    'getTeacherClasses': getTeacherClasses,
+    'getMasterSiswa': getMasterSiswa,
+    'saveSiswaManual': saveSiswaManual,
+    'deleteSiswa': deleteSiswa,
+    'bulkUploadSiswa': bulkUploadSiswa,
+    'getAbsensiData': getAbsensiData,
+    'saveAbsensiData': saveAbsensiData,
+    'getNilaiData': getNilaiData,
+    'saveNilaiData': saveNilaiData,
+    'getPengajaranGuru': getPengajaranGuru,
+    'getLkhInitialData': getLkhInitialData,
+    'getLkhData': getLkhData,
+    'saveLkhRecord': saveLkhRecord,
+    'deleteLkhRecord': deleteLkhRecord,
+    'renewUserSession': renewUserSession
+  };
+
+  if (!action || typeof publicApiMap[action] !== 'function') {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Action tidak dikenali: ' + action }))
+      .setMimeType(ContentService.MimeType.JSON);
   }
 
+  var result = publicApiMap[action].apply(null, args || []);
+  return ContentService.createTextOutput(JSON.stringify(result !== undefined ? result : { success: true }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+  // 1. Jika diakses dengan query action / API gateway
+  if (e && e.parameter) {
+    if (e.parameter.action) {
+      try {
+        var action = e.parameter.action;
+        var args = [];
+        if (e.parameter.args) {
+          try {
+            args = JSON.parse(e.parameter.args);
+            if (!Array.isArray(args)) args = [args];
+          } catch (ex) {
+            args = [e.parameter.args];
+          }
+        }
+        return handleApiGateway(action, args);
+      } catch (err) {
+        return ContentService.createTextOutput(JSON.stringify({ success: false, message: err.message }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+
+    // Ping / Health Check
+    if (e.parameter.api === '1' || e.parameter.ping === '1') {
+      return ContentService.createTextOutput(JSON.stringify({
+        status: 'ok',
+        service: 'AJAR Google Apps Script API Gateway',
+        spreadsheetId: DEFAULT_SPREADSHEET_ID,
+        timestamp: new Date().toISOString()
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  // 2. Jika diakses langsung via browser Web App URL -> Render HTML
   var template;
   try {
     template = HtmlService.createTemplateFromFile('index');
@@ -41,7 +108,7 @@ function doGet(e) {
 }
 
 /**
- * REST API Gateway untuk Vercel / External HTTP Clients
+ * REST API Gateway untuk Vercel / External HTTP Clients via POST
  */
 function doPost(e) {
   try {
@@ -54,42 +121,7 @@ function doPost(e) {
     var action = payload.action || payload.functionName;
     var args = payload.args || [];
 
-    var publicApiMap = {
-      'loginUser': loginUser,
-      'registerGuru': registerGuru,
-      'getReferencesData': getReferencesData,
-      'getUserProfile': getUserProfile,
-      'updateProfile': updateProfile,
-      'uploadMediaFile': uploadMediaFile,
-      'getDashboardData': getDashboardData,
-      'getMasterAjarData': getMasterAjarData,
-      'saveMasterAjar': saveMasterAjar,
-      'getTeacherClasses': getTeacherClasses,
-      'getMasterSiswa': getMasterSiswa,
-      'saveSiswaManual': saveSiswaManual,
-      'deleteSiswa': deleteSiswa,
-      'bulkUploadSiswa': bulkUploadSiswa,
-      'getAbsensiData': getAbsensiData,
-      'saveAbsensiData': saveAbsensiData,
-      'getNilaiData': getNilaiData,
-      'saveNilaiData': saveNilaiData,
-      'getPengajaranGuru': getPengajaranGuru,
-      'getLkhInitialData': getLkhInitialData,
-      'getLkhData': getLkhData,
-      'saveLkhRecord': saveLkhRecord,
-      'deleteLkhRecord': deleteLkhRecord,
-      'renewUserSession': renewUserSession
-    };
-
-    if (typeof publicApiMap[action] !== 'function') {
-      return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Action tidak dikenali: ' + action }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-
-    var result = publicApiMap[action].apply(null, args);
-    return ContentService.createTextOutput(JSON.stringify(result !== undefined ? result : { success: true }))
-      .setMimeType(ContentService.MimeType.JSON);
-
+    return handleApiGateway(action, args);
   } catch (error) {
     return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Internal Server Error: ' + error.message }))
       .setMimeType(ContentService.MimeType.JSON);

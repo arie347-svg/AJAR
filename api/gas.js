@@ -14,13 +14,8 @@ module.exports = async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const gasUrl = process.env.GAS_DEPLOYMENT_URL;
-  if (!gasUrl) {
-    return res.status(500).json({
-      success: false,
-      message: 'Server Configuration Error: GAS_DEPLOYMENT_URL belum diatur di Environment Variables Vercel.'
-    });
-  }
+  const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbzHRrmr1di7JHLr_cdRIc5fpptNc3cbwTe7hA4oMQ9ruJ70Lsu5pEJ8oSrcBd1hbkVPhg/exec';
+  const gasUrl = process.env.GAS_DEPLOYMENT_URL || DEFAULT_GAS_URL;
 
   // Support health-check / ping lewat GET
   if (req.method === 'GET') {
@@ -54,7 +49,7 @@ module.exports = async function handler(req, res) {
     }
 
     // Teruskan payload ke Google Apps Script Web App dengan follow redirect otomatis
-    const response = await fetch(gasUrl, {
+    let response = await fetch(gasUrl, {
       method: 'POST',
       redirect: 'follow', // Mengikuti HTTP 302 redirect dari GAS ke googleusercontent.com
       headers: {
@@ -63,15 +58,40 @@ module.exports = async function handler(req, res) {
       body: typeof payload === 'string' ? payload : JSON.stringify(payload || {})
     });
 
-    const responseText = await response.text();
+    let responseText = await response.text();
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      data = { success: false, message: responseText };
+      // Jika doPost belum aktif di versi deployment GAS lama, fallback otomatis via GET
+      if (responseText.includes('doPost') || responseText.includes('tidak ditemukan')) {
+        try {
+          const action = (payload && (payload.action || payload.functionName)) || '';
+          const argsStr = JSON.stringify((payload && payload.args) || []);
+          const fallbackUrl = gasUrl + (gasUrl.includes('?') ? '&' : '?') + 'action=' + encodeURIComponent(action) + '&args=' + encodeURIComponent(argsStr);
+          const getRes = await fetch(fallbackUrl, { redirect: 'follow' });
+          const getText = await getRes.text();
+          try {
+            data = JSON.parse(getText);
+          } catch (ex) {
+            data = {
+              success: false,
+              message: 'Endpoint Google Apps Script belum diperbarui ke versi dengan doPost/doGet API. Silakan buka editor Apps Script, simpan Code.gs terbaru, lalu klik Terapkan > Kelola Penerapan > Edit (ikon pensil) > pilih Versi Baru > Terapkan.'
+            };
+          }
+        } catch (fbErr) {
+          data = {
+            success: false,
+            message: 'Endpoint Google Apps Script belum siap menerima API request. Silakan perbarui versi deployment di Apps Script.'
+          };
+        }
+      } else {
+        const cleanMsg = responseText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        data = { success: false, message: cleanMsg.substring(0, 300) || 'Respon dari Google Apps Script tidak valid' };
+      }
     }
 
-    return res.status(response.status).json(data);
+    return res.status(200).json(data);
   } catch (error) {
     console.error('[GAS Proxy Error]', error);
     return res.status(500).json({
