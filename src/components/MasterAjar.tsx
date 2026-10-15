@@ -388,9 +388,9 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
           </div>
 
           {/* Posisi Tengah: Tahun Ajar dengan Ikon Selaras, Tanpa Pembungkus Hijau */}
-          <div className="flex items-center justify-center gap-2 py-0.5 text-center justify-self-center">
+          <div className="flex items-center justify-center gap-2 py-1 my-auto text-center justify-self-center">
             <CalendarDays className="w-4 h-4 text-blue-600 shrink-0" />
-            <span className="text-xs sm:text-sm font-extrabold text-[#0D162B] tracking-tight">
+            <span className="text-xs sm:text-sm font-extrabold text-[#0D162B] tracking-tight leading-normal">
               Tahun Ajar {data.tahunAjaran || '2026/2027'}
             </span>
           </div>
@@ -464,102 +464,81 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
       {/* 2. MAIN 3-SECTION CONTAINER (Full screen fit with isolated vertical scroll) */}
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-3 overflow-hidden">
         {/* ========================================================================= */}
-        {/* SEKSI 1: TUGAS TAMBAHAN WALI KELAS (Emerald / Teal Thematic Accent) */}
+        {/* SEKSI 1: TUGAS TAMBAHAN WALI KELAS */}
         {/* ========================================================================= */}
         <section
           className={`neu-raised-card bg-[#EAF0F9] rounded-2xl p-3 sm:p-4 border border-white/80 flex flex-col h-full min-h-0 ${
             activeTabMobile !== 'wali' ? 'hidden lg:flex' : 'flex'
           }`}
         >
-          {/* Header Seksi - Hilangkan tulisan tanda emerald */}
-          <div className="flex items-center justify-between pb-2.5 mb-2 border-b border-[#d4deeb]/70 shrink-0">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/80 flex items-center justify-center shadow-xs">
-                <Users className="w-4 h-4 stroke-[2.5]" />
-              </div>
-              <div>
-                <h2 className="text-xs sm:text-sm font-extrabold text-[#0D162B] tracking-tight">
-                  Tugas Tambahan Wali Kelas
-                </h2>
-                <p className="text-[10px] font-semibold text-slate-500">
-                  Peran wali kelas tahun ajaran aktif
-                </p>
-              </div>
-            </div>
-          </div>
-
           {/* Area Scroll Mandiri */}
           <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-scroll pr-1 space-y-3">
             {!isWaliEditing ? (
               waliKelas === 'Bukan Wali Kelas' ? (
-                /* KARTU NEUMORPHIC KHUSUS DENGAN IKON DI ATAS TEKS: BUKAN WALI KELAS */
-                <div className="neu-flat bg-[#EBF0F8] rounded-2xl p-5 text-center border border-white/90 flex flex-col items-center justify-center space-y-2">
+                <div className="neu-flat bg-[#EBF0F8] rounded-2xl p-4 text-center border border-white/90 flex flex-col items-center justify-center space-y-3">
                   <div className="w-12 h-12 rounded-2xl neu-pressed bg-[#E8EEF6] text-emerald-600 flex items-center justify-center shadow-inner">
-                    <GraduationCap className="w-6 h-6 stroke-[2.2]" />
+                    <GraduationCap className="w-6 h-6 stroke-[2.5]" />
                   </div>
                   <div>
                     <h3 className="text-sm font-black text-[#0D162B]">
                       Bukan Wali Kelas
                     </h3>
-                    <p className="text-[11px] text-slate-500 max-w-xs mx-auto mt-0.5">
-                      Status aktif: Bertugas sebagai guru mata pelajaran mandiri
-                    </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setConfirmModal({ type: 'wali' })}
-                    className="mt-1 px-4 py-1.5 rounded-xl neu-flat active:neu-pressed text-emerald-700 hover:text-emerald-800 border border-emerald-200 text-xs font-black flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer shadow-xs"
+                    className="px-4 py-1.5 rounded-xl neu-flat active:neu-pressed text-emerald-700 hover:text-emerald-800 border border-emerald-200 text-xs font-black cursor-pointer shadow-xs"
                   >
-                    <Edit3 className="w-3.5 h-3.5" />
-                    <span>Ubah Penugasan</span>
+                    edit
                   </button>
                 </div>
               ) : (
-                /* KARTU TERDAFTAR SEBAGAI WALI KELAS */
                 <div className="neu-flat bg-[#EBF0F8] rounded-2xl p-3.5 border border-white/90 space-y-3">
-                  <div className="flex items-center justify-between gap-2">
+                  {/* Ikon Peran Aga Besar + Nama Wali Kelas */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200/80 flex items-center justify-center shrink-0 shadow-inner">
+                      <GraduationCap className="w-6 h-6 stroke-[2.5]" />
+                    </div>
                     <div className="min-w-0">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700">
-                        Penugasan Wali Kelas
-                      </span>
-                      <h3 className="text-sm font-black text-[#0D162B] truncate mt-0.5">
+                      <h3 className="text-sm sm:text-base font-black text-[#0D162B] truncate">
                         Wali Kelas {waliKelas}
                       </h3>
                     </div>
-
-                    <span
-                      className="shrink-0 p-1.5 rounded-xl bg-emerald-100/70 text-emerald-800 border border-emerald-300/80 shadow-xs"
-                      title="Wali Kelas Aktif"
-                    >
-                      <GraduationCap className="w-4 h-4 text-emerald-600" />
-                    </span>
                   </div>
 
+                  {/* Di bawahnya: Ikon Kelas Aga Besar + List Kelas */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2.5 p-2 rounded-xl neu-pressed bg-[#E8EEF6]">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/80 flex items-center justify-center shrink-0 shadow-inner">
+                        <Users className="w-4 h-4 stroke-[2.5]" />
+                      </div>
+                      <span className="text-xs font-black text-[#0D162B]">
+                        Kelas {waliKelas}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Tombol edit: cukup tulisan "edit" */}
                   <div className="pt-2 border-t border-[#d4deeb]/60 flex items-center justify-end">
                     <button
                       type="button"
                       onClick={() => setConfirmModal({ type: 'wali' })}
-                      className="px-3.5 py-1.5 rounded-xl neu-flat active:neu-pressed text-emerald-700 hover:text-emerald-800 border border-emerald-200 text-xs font-black flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer shadow-xs"
+                      className="px-4 py-1.5 rounded-xl neu-flat active:neu-pressed text-emerald-700 hover:text-emerald-800 border border-emerald-200 text-xs font-black cursor-pointer shadow-xs"
                     >
-                      <Edit3 className="w-3.5 h-3.5" />
-                      <span>Edit</span>
+                      edit
                     </button>
                   </div>
                 </div>
               )
             ) : (
-              /* FORMULIR UBAH PENUGASAN WALI KELAS */
-              <div className="neu-flat bg-[#EBF0F8] rounded-2xl p-3.5 border border-emerald-300 shadow-sm space-y-3 animate-in fade-in duration-150">
+              /* FORMULIR EDIT WALI KELAS (CLEAN & RINGKAS) */
+              <div className="neu-flat bg-[#EBF0F8] rounded-2xl p-3.5 border border-emerald-300 shadow-sm space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-extrabold text-emerald-800">
-                    Ubah Penugasan Wali Kelas
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-500">
-                    Modal Neumorphic
+                    Ubah Wali Kelas
                   </span>
                 </div>
 
-                {/* Trigger Button Pembuka Modal Wali Kelas */}
                 <button
                   type="button"
                   onClick={() => setShowWaliModal(true)}
@@ -569,40 +548,27 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
                     <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/80 flex items-center justify-center shrink-0 shadow-xs">
                       <GraduationCap className="w-4 h-4 stroke-[2.5]" />
                     </div>
-                    <div className="min-w-0">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 block">
-                        Penugasan Terpilih
-                      </span>
-                      <span className="truncate text-xs sm:text-sm font-extrabold text-[#0D162B] block">
-                        {waliKelas === 'Bukan Wali Kelas' ? 'Bukan Wali Kelas' : `Wali Kelas ${waliKelas}`}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">
-                      Ganti Kelas
+                    <span className="truncate text-xs sm:text-sm font-extrabold text-[#0D162B]">
+                      {waliKelas === 'Bukan Wali Kelas' ? 'Pilih Kelas Wali...' : `Wali Kelas ${waliKelas}`}
                     </span>
-                    <ChevronDown className="w-4 h-4 text-slate-400" />
                   </div>
+                  <ChevronDown className="w-4 h-4 text-slate-400" />
                 </button>
 
-                {/* Quick Toggle: Opsi Bukan Wali Kelas */}
-                <div className="pt-0.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setWaliKelas('Bukan Wali Kelas');
-                      showToast('Status diatur: Bukan Wali Kelas', 'info');
-                    }}
-                    className={`w-full py-1.5 px-3 rounded-xl text-[11px] font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                      waliKelas === 'Bukan Wali Kelas'
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-extrabold neu-pressed'
-                        : 'neu-flat bg-[#EBF0F8] text-slate-600 hover:text-slate-800 border-white/80'
-                    }`}
-                  >
-                    <span>✓ Tetapkan Sebagai: Bukan Wali Kelas</span>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setWaliKelas('Bukan Wali Kelas');
+                    showToast('Status diatur: Bukan Wali Kelas', 'info');
+                  }}
+                  className={`w-full py-1.5 px-3 rounded-xl text-[11px] font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    waliKelas === 'Bukan Wali Kelas'
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-extrabold neu-pressed'
+                      : 'neu-flat bg-[#EBF0F8] text-slate-600 hover:text-slate-800 border-white/80'
+                  }`}
+                >
+                  <span>Bukan Wali Kelas</span>
+                </button>
 
                 <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#d4deeb]/60">
                   <button
@@ -611,17 +577,16 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
                       setWaliKelas(initialWaliKelas);
                       setIsWaliEditing(false);
                     }}
-                    className="px-3 py-1.5 rounded-xl neu-flat active:neu-pressed text-slate-600 text-xs font-bold active:scale-95 transition-all cursor-pointer"
+                    className="px-3 py-1.5 rounded-xl neu-flat active:neu-pressed text-slate-600 text-xs font-bold cursor-pointer"
                   >
                     Batal
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsWaliEditing(false)}
-                    className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-extrabold shadow-sm active:scale-95 transition-all cursor-pointer flex items-center gap-1"
+                    className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-extrabold shadow-sm cursor-pointer"
                   >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Selesai</span>
+                    Simpan
                   </button>
                 </div>
               </div>
@@ -630,142 +595,92 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
         </section>
 
         {/* ========================================================================= */}
-        {/* SEKSI 2: MATA PELAJARAN UTAMA (Royal Blue / Indigo Thematic Accent) */}
+        {/* SEKSI 2: MATA PELAJARAN UTAMA */}
         {/* ========================================================================= */}
         <section
           className={`neu-raised-card bg-[#EAF0F9] rounded-2xl p-3 sm:p-4 border border-white/80 flex flex-col h-full min-h-0 ${
             activeTabMobile !== 'utama' ? 'hidden lg:flex' : 'flex'
           }`}
         >
-          {/* Header Seksi - Hilangkan tulisan wajib 1 paket */}
-          <div className="flex items-center justify-between pb-2.5 mb-2 border-b border-[#d4deeb]/70 shrink-0">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 border border-blue-200/80 flex items-center justify-center shadow-xs">
-                <BookOpen className="w-4 h-4 stroke-[2.5]" />
-              </div>
-              <div>
-                <h2 className="text-xs sm:text-sm font-extrabold text-[#0D162B] tracking-tight">
-                  Mata Pelajaran Utama
-                </h2>
-                <p className="text-[10px] font-semibold text-slate-500">
-                  Paket mapel wajib &amp; rombel diajar
-                </p>
-              </div>
-            </div>
-          </div>
-
           {/* Area Scroll Mandiri */}
           <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-scroll pr-1 space-y-3">
             {isUtamaLocked && mapelUtamaId ? (
-              /* KARTU TERKUNCI DENGAN SIMBOL GEMBOK SAJA */
               <div className="neu-flat bg-[#EBF0F8] rounded-2xl p-3.5 border border-white/90 space-y-3">
-                <div className="flex items-start justify-between gap-2">
+                {/* Icon Mapel Aga Besar + Nama Mapel */}
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 border border-blue-200/80 flex items-center justify-center shrink-0 shadow-inner">
+                    <BookOpen className="w-6 h-6 stroke-[2.5]" />
+                  </div>
                   <div className="min-w-0">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
-                      Mata Pelajaran Utama
-                    </span>
-                    <h3 className="text-sm font-black text-[#0D162B] truncate mt-0.5">
+                    <h3 className="text-sm sm:text-base font-black text-[#0D162B] truncate">
                       {getMapelName(mapelUtamaId)}
                     </h3>
                   </div>
-
-                  {/* Simbol Gembok Saja (Tanpa tulisan terkunci 1 paket) */}
-                  <span
-                    className="shrink-0 p-1.5 rounded-xl bg-blue-100/70 text-blue-800 border border-blue-300/80 shadow-xs"
-                    title="Terkunci"
-                  >
-                    <Lock className="w-3.5 h-3.5 text-blue-600" />
-                  </span>
                 </div>
 
-                {/* List Kelas Terpilih dalam Paket */}
+                {/* Di bawahnya: Icon Kelas Aga Besar + List Kelas */}
                 <div className="space-y-1.5">
-                  <span className="text-[11px] font-extrabold text-slate-700 block">
-                    Daftar Kelas Diajar ({utamaKelases.length}):
-                  </span>
-                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1.5 rounded-xl neu-pressed bg-[#E8EEF6]">
-                    {utamaKelases.length > 0 ? (
-                      utamaKelases.map((k, i) => (
-                        <span
-                          key={i}
-                          className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-800 border border-blue-200/80 text-[11px] font-black shadow-xs"
-                        >
-                          {k}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-slate-400 italic text-[11px] p-1">
-                        Belum ada kelas yang dipilih dalam paket ini
-                      </span>
-                    )}
+                  <div className="flex items-start gap-2.5 p-2 rounded-xl neu-pressed bg-[#E8EEF6]">
+                    <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-200/80 flex items-center justify-center shrink-0 shadow-inner mt-0.5">
+                      <GraduationCap className="w-4 h-4 stroke-[2.5]" />
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 flex-1 py-0.5">
+                      {utamaKelases.length > 0 ? (
+                        utamaKelases.map((k, i) => (
+                          <span
+                            key={i}
+                            className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-800 border border-blue-200/80 text-[11px] font-black shadow-xs"
+                          >
+                            {k}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-slate-400 italic text-[11px]">Belum ada kelas</span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {/* Footer Aksi - Hilangkan tulisan mapel & kelas terikat 1 kesatuan */}
+                {/* Tombol edit: cukup tulisan "edit" */}
                 <div className="pt-2 border-t border-[#d4deeb]/60 flex items-center justify-end">
                   <button
                     type="button"
                     onClick={() => setConfirmModal({ type: 'utama' })}
-                    className="px-3.5 py-1.5 rounded-xl neu-flat active:neu-pressed text-blue-700 hover:text-blue-800 border border-blue-200 text-xs font-black flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer shadow-xs"
+                    className="px-4 py-1.5 rounded-xl neu-flat active:neu-pressed text-blue-700 hover:text-blue-800 border border-blue-200 text-xs font-black cursor-pointer shadow-xs"
                   >
-                    <Edit3 className="w-3.5 h-3.5" />
-                    <span>Edit Paket</span>
+                    edit
                   </button>
                 </div>
               </div>
             ) : (
-              /* FORMULIR EDIT 1 PAKET (EDITING PACKAGE CARD) */
-              <div className="neu-flat bg-[#EBF0F8] rounded-2xl p-3.5 border border-blue-300 shadow-sm space-y-3 animate-in fade-in duration-150">
+              /* FORMULIR EDIT 1 PAKET (CLEAN & RINGKAS) */
+              <div className="neu-flat bg-[#EBF0F8] rounded-2xl p-3.5 border border-blue-300 shadow-sm space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Unlock className="w-4 h-4 text-blue-600" />
-                    <span className="text-xs font-extrabold text-blue-800">
-                      Konfigurasi Paket Utama
-                    </span>
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-500">
-                    Mapel &amp; Kelas
+                  <span className="text-xs font-extrabold text-blue-800">
+                    Konfigurasi Mapel Utama
                   </span>
                 </div>
 
-                {/* Dropdown Mapel Neumorphic Melayang (Modal Trigger) */}
-                <div className="space-y-1">
-                  <label className="text-[11px] font-extrabold text-slate-700 flex items-center justify-between">
-                    <span>Mata Pelajaran Utama:</span>
-                    <span className="text-[10px] text-blue-700 font-bold">Wajib 1 Mapel</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowMapelUtamaModal(true)}
-                    className="w-full neu-pressed bg-[#E8EEF6] border border-white/70 rounded-2xl flex items-center justify-between p-3 text-left transition-all hover:bg-[#e4ebf5] active:scale-[0.99] cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                      <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 border border-blue-200/80 flex items-center justify-center shrink-0 shadow-xs">
-                        <BookOpen className="w-4 h-4 stroke-[2.5]" />
-                      </div>
-                      <div className="min-w-0">
-                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 block">
-                          Mata Pelajaran Utama
-                        </span>
-                        <span
-                          className={`truncate text-xs sm:text-sm font-extrabold block ${
-                            mapelUtamaId ? 'text-[#0D162B]' : 'text-slate-400 font-bold'
-                          }`}
-                        >
-                          {mapelUtamaId ? getMapelName(mapelUtamaId) : 'Pilih Mata Pelajaran Utama...'}
-                        </span>
-                      </div>
+                <button
+                  type="button"
+                  onClick={() => setShowMapelUtamaModal(true)}
+                  className="w-full neu-pressed bg-[#E8EEF6] border border-white/70 rounded-2xl flex items-center justify-between p-3 text-left transition-all hover:bg-[#e4ebf5] active:scale-[0.99] cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                    <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 border border-blue-200/80 flex items-center justify-center shrink-0 shadow-xs">
+                      <BookOpen className="w-4 h-4 stroke-[2.5]" />
                     </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-xl border border-blue-200">
-                        {mapelUtamaId ? 'Ganti' : 'Pilih Mapel'}
-                      </span>
-                      <ChevronDown className="w-4 h-4 text-slate-400" />
-                    </div>
-                  </button>
-                </div>
+                    <span
+                      className={`truncate text-xs sm:text-sm font-extrabold block ${
+                        mapelUtamaId ? 'text-[#0D162B]' : 'text-slate-400 font-bold'
+                      }`}
+                    >
+                      {mapelUtamaId ? getMapelName(mapelUtamaId) : 'Pilih Mata Pelajaran Utama...'}
+                    </span>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-slate-400" />
+                </button>
 
-                {/* Pilih Kelas Terkait dengan Tab Filter Tingkatan X, XI, XII */}
                 <NeuClassSelector
                   listKelas={listKelas}
                   selectedKelases={utamaKelases}
@@ -773,7 +688,6 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
                   accentColor="blue"
                 />
 
-                {/* Tombol Aksi Kunci Paket */}
                 <div className="flex items-center justify-between pt-2 border-t border-[#d4deeb]/60">
                   {initialMapelUtamaId ? (
                     <button
@@ -783,21 +697,20 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
                         setUtamaKelases(initialUtamaKelases);
                         setIsUtamaLocked(true);
                       }}
-                      className="px-3 py-1.5 rounded-xl neu-flat active:neu-pressed text-slate-600 text-xs font-bold active:scale-95 transition-all cursor-pointer"
+                      className="px-3 py-1.5 rounded-xl neu-flat active:neu-pressed text-slate-600 text-xs font-bold cursor-pointer"
                     >
                       Batal
                     </button>
                   ) : (
-                    <span className="text-[10px] text-slate-400">Wajib dikonfigurasi</span>
+                    <span className="text-[10px] text-slate-400">Wajib diisi</span>
                   )}
 
                   <button
                     type="button"
                     onClick={handleLockUtamaPackage}
-                    className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-extrabold shadow-sm active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+                    className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-extrabold shadow-sm cursor-pointer"
                   >
-                    <Lock className="w-3.5 h-3.5" />
-                    <span>Kunci Paket Utama</span>
+                    Simpan
                   </button>
                 </div>
               </div>
@@ -806,50 +719,29 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
         </section>
 
         {/* ========================================================================= */}
-        {/* SEKSI 3: MATA PELAJARAN TAMBAHAN (Amber / Orange Thematic Accent) */}
+        {/* SEKSI 3: MATA PELAJARAN TAMBAHAN */}
         {/* ========================================================================= */}
         <section
           className={`neu-raised-card bg-[#EAF0F9] rounded-2xl p-3 sm:p-4 border border-white/80 flex flex-col h-full min-h-0 ${
             activeTabMobile !== 'tambahan' ? 'hidden lg:flex' : 'flex'
           }`}
         >
-          {/* Header Seksi - Hilangkan tulisan penanda opsional */}
-          <div className="flex items-center justify-between pb-2.5 mb-2 border-b border-[#d4deeb]/70 shrink-0">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center shadow-xs">
-                <Layers className="w-4 h-4 stroke-[2.5]" />
-              </div>
-              <div>
-                <h2 className="text-xs sm:text-sm font-extrabold text-[#0D162B] tracking-tight">
-                  Mata Pelajaran Tambahan
-                </h2>
-                <p className="text-[10px] font-semibold text-slate-500">
-                  Paket mapel muatan lokal / tambahan
-                </p>
-              </div>
-            </div>
-          </div>
-
           {/* Area Scroll Mandiri */}
           <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-scroll pr-1 space-y-3">
             {mapelTambahan.length === 0 ? (
-              /* KARTU NEUMORPHIC KHUSUS DENGAN IKON DI ATAS TEKS: TIDAK ADA PAKET TAMBAHAN */
-              <div className="neu-flat bg-[#EBF0F8] rounded-2xl p-5 text-center border border-white/90 flex flex-col items-center justify-center space-y-2">
+              <div className="neu-flat bg-[#EBF0F8] rounded-2xl p-5 text-center border border-white/90 flex flex-col items-center justify-center space-y-3">
                 <div className="w-12 h-12 rounded-2xl neu-pressed bg-[#E8EEF6] text-amber-600 flex items-center justify-center shadow-inner">
-                  <Layers className="w-6 h-6 stroke-[2.2]" />
+                  <Layers className="w-6 h-6 stroke-[2.5]" />
                 </div>
                 <div>
                   <h4 className="text-sm font-black text-[#0D162B]">
                     Tidak Ada Paket Tambahan
                   </h4>
-                  <p className="text-[11px] text-slate-500 max-w-xs mx-auto mt-0.5">
-                    Status aktif: Hanya mengampu Mata Pelajaran Utama
-                  </p>
                 </div>
                 <button
                   type="button"
                   onClick={handleAddTambahanPackage}
-                  className="mt-1 px-4 py-2 rounded-xl neu-flat active:neu-pressed text-amber-700 hover:text-amber-800 border border-amber-200/80 font-black text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer shadow-xs"
+                  className="px-4 py-2 rounded-xl neu-flat active:neu-pressed text-amber-700 hover:text-amber-800 border border-amber-200 font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <Plus className="w-4 h-4 stroke-[2.5]" />
                   <span>Tambah Paket Tambahan</span>
@@ -872,134 +764,108 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
                     {!isEditing ? (
                       /* LOCKED PACKAGE VIEW */
                       <>
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-700">
-                              Paket Tambahan #{idx + 1}
-                            </span>
-                            <h3 className="text-sm font-black text-[#0D162B] truncate mt-0.5">
-                              {mNama || 'Belum Memilih Mapel'}
-                            </h3>
-                          </div>
-
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            {/* Simbol Gembok Saja */}
-                            <span
-                              className="shrink-0 p-1.5 rounded-xl bg-amber-100/70 text-amber-800 border border-amber-300/80 shadow-xs"
-                              title="Terkunci"
-                            >
-                              <Lock className="w-3.5 h-3.5 text-amber-600" />
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setConfirmModal({ type: 'deleteTambahan', index: idx })
-                              }
-                              className="p-1.5 rounded-xl neu-flat active:neu-pressed text-rose-600 hover:text-rose-700 border border-rose-200/60 cursor-pointer active:scale-95 transition-all shadow-xs"
-                              title="Hapus paket mapel tambahan"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* List Kelas Terpilih */}
-                        <div className="space-y-1.5">
-                          <span className="text-[11px] font-extrabold text-slate-700 block">
-                            Daftar Kelas Diajar ({tambahan.kelases?.length || 0}):
-                          </span>
-                          <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1.5 rounded-xl neu-pressed bg-[#E8EEF6]">
-                            {tambahan.kelases && tambahan.kelases.length > 0 ? (
-                              tambahan.kelases.map((k, kIdx) => (
-                                <span
-                                  key={kIdx}
-                                  className="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200/80 text-[11px] font-black shadow-xs"
-                                >
-                                  {k}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-slate-400 italic text-[11px] p-1">
-                                Belum ada kelas dipilih
+                        {/* Icon Mapel Aga Besar + Nama Mapel */}
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center shrink-0 shadow-inner">
+                              <Layers className="w-6 h-6 stroke-[2.5]" />
+                            </div>
+                            <div className="min-w-0">
+                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-700 block">
+                                Paket Tambahan #{idx + 1}
                               </span>
-                            )}
+                              <h3 className="text-sm sm:text-base font-black text-[#0D162B] truncate mt-0.5">
+                                {mNama || 'Belum Memilih Mapel'}
+                              </h3>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setConfirmModal({ type: 'deleteTambahan', index: idx })
+                            }
+                            className="p-1.5 rounded-xl neu-flat active:neu-pressed text-rose-600 hover:text-rose-700 border border-rose-200/60 cursor-pointer shadow-xs"
+                            title="Hapus paket"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Di bawahnya: Icon Kelas Aga Besar + List Kelas */}
+                        <div className="space-y-1.5">
+                          <div className="flex items-start gap-2.5 p-2 rounded-xl neu-pressed bg-[#E8EEF6]">
+                            <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center shrink-0 shadow-inner mt-0.5">
+                              <GraduationCap className="w-4 h-4 stroke-[2.5]" />
+                            </div>
+                            <div className="flex flex-wrap gap-1.5 flex-1 py-0.5">
+                              {tambahan.kelases && tambahan.kelases.length > 0 ? (
+                                tambahan.kelases.map((k, kIdx) => (
+                                  <span
+                                    key={kIdx}
+                                    className="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200/80 text-[11px] font-black shadow-xs"
+                                  >
+                                    {k}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="text-slate-400 italic text-[11px]">Belum ada kelas</span>
+                              )}
+                            </div>
                           </div>
                         </div>
 
-                        {/* Footer Aksi - Hilangkan tulisan paket mapel & kelas mandiri */}
+                        {/* Tombol edit: cukup tulisan "edit" */}
                         <div className="pt-2 border-t border-[#d4deeb]/60 flex items-center justify-end">
                           <button
                             type="button"
                             onClick={() =>
                               setConfirmModal({ type: 'tambahan', index: idx })
                             }
-                            className="px-3.5 py-1.5 rounded-xl neu-flat active:neu-pressed text-amber-700 hover:text-amber-800 border border-amber-200 text-xs font-black flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer shadow-xs"
+                            className="px-4 py-1.5 rounded-xl neu-flat active:neu-pressed text-amber-700 hover:text-amber-800 border border-amber-200 text-xs font-black cursor-pointer shadow-xs"
                           >
-                            <Edit3 className="w-3.5 h-3.5" />
-                            <span>Edit Paket</span>
+                            edit
                           </button>
                         </div>
                       </>
                     ) : (
                       /* EDITING PACKAGE VIEW */
-                      <>
+                      <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5">
-                            <Unlock className="w-4 h-4 text-amber-600" />
-                            <span className="text-xs font-extrabold text-amber-800">
-                              Edit Paket Tambahan #{idx + 1}
-                            </span>
-                          </div>
+                          <span className="text-xs font-extrabold text-amber-800">
+                            Edit Paket Tambahan #{idx + 1}
+                          </span>
                           <button
                             type="button"
                             onClick={() =>
                               setConfirmModal({ type: 'deleteTambahan', index: idx })
                             }
                             className="p-1 rounded-lg text-rose-500 hover:text-rose-700 text-xs cursor-pointer"
-                            title="Hapus Paket"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
 
-                        {/* Dropdown Mapel Tambahan (Modal Trigger) */}
-                        <div className="space-y-1">
-                          <label className="text-[11px] font-extrabold text-slate-700 flex items-center justify-between">
-                            <span>Mata Pelajaran Tambahan:</span>
-                            <span className="text-[10px] text-amber-700 font-bold">Paket #{idx + 1}</span>
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => setTambahanModalIdx(idx)}
-                            className="w-full neu-pressed bg-[#E8EEF6] border border-white/70 rounded-2xl flex items-center justify-between p-3 text-left transition-all hover:bg-[#e4ebf5] active:scale-[0.99] cursor-pointer"
-                          >
-                            <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                              <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center shrink-0 shadow-xs">
-                                <Layers className="w-4 h-4 stroke-[2.5]" />
-                              </div>
-                              <div className="min-w-0">
-                                <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-600 block">
-                                  Mapel Tambahan #{idx + 1}
-                                </span>
-                                <span
-                                  className={`truncate text-xs sm:text-sm font-extrabold block ${
-                                    tambahan.mapelId ? 'text-[#0D162B]' : 'text-slate-400 font-bold'
-                                  }`}
-                                >
-                                  {tambahan.mapelNama || (tambahan.mapelId ? getMapelName(tambahan.mapelId) : 'Pilih Mata Pelajaran Tambahan...')}
-                                </span>
-                              </div>
+                        <button
+                          type="button"
+                          onClick={() => setTambahanModalIdx(idx)}
+                          className="w-full neu-pressed bg-[#E8EEF6] border border-white/70 rounded-2xl flex items-center justify-between p-3 text-left transition-all hover:bg-[#e4ebf5] active:scale-[0.99] cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                            <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center shrink-0 shadow-xs">
+                              <Layers className="w-4 h-4 stroke-[2.5]" />
                             </div>
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-xl border border-amber-200">
-                                {tambahan.mapelId ? 'Ganti' : 'Pilih Mapel'}
-                              </span>
-                              <ChevronDown className="w-4 h-4 text-slate-400" />
-                            </div>
-                          </button>
-                        </div>
+                            <span
+                              className={`truncate text-xs sm:text-sm font-extrabold block ${
+                                tambahan.mapelId ? 'text-[#0D162B]' : 'text-slate-400 font-bold'
+                              }`}
+                            >
+                              {tambahan.mapelNama || (tambahan.mapelId ? getMapelName(tambahan.mapelId) : 'Pilih Mata Pelajaran Tambahan...')}
+                            </span>
+                          </div>
+                          <ChevronDown className="w-4 h-4 text-slate-400" />
+                        </button>
 
-                        {/* Pilih Kelas Diajar dengan Tab Filter Tingkatan X, XI, XII */}
                         <NeuClassSelector
                           listKelas={listKelas}
                           selectedKelases={tambahan.kelases || []}
@@ -1007,18 +873,16 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
                           accentColor="amber"
                         />
 
-                        {/* Tombol Kunci Paket Tambahan */}
                         <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#d4deeb]/60">
                           <button
                             type="button"
                             onClick={() => handleLockTambahanPackage(idx)}
-                            className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 text-white text-xs font-extrabold shadow-sm active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+                            className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 text-white text-xs font-extrabold shadow-sm cursor-pointer"
                           >
-                            <Lock className="w-3.5 h-3.5" />
-                            <span>Kunci Paket Tambahan</span>
+                            Simpan
                           </button>
                         </div>
-                      </>
+                      </div>
                     )}
                   </div>
                 );
@@ -1031,21 +895,10 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
                 <button
                   type="button"
                   onClick={handleAddTambahanPackage}
-                  className="w-full py-2.5 rounded-xl neu-flat active:neu-pressed text-amber-700 hover:text-amber-800 border border-amber-200/80 font-black text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer shadow-xs"
+                  className="w-full py-2.5 rounded-xl neu-flat active:neu-pressed text-amber-700 hover:text-amber-800 border border-amber-200/80 font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <Plus className="w-4 h-4 stroke-[2.5]" />
                   <span>Tambah Paket Mapel Tambahan</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMapelTambahan([]);
-                    setEditingTambahanIdx(null);
-                    showToast('Status diubah: Tidak Ada Paket Tambahan', 'info');
-                  }}
-                  className="w-full py-2 rounded-xl neu-flat active:neu-pressed text-slate-500 hover:text-slate-800 border border-white/60 text-[11px] font-bold transition-all cursor-pointer"
-                >
-                  Beralih ke: Tidak Ada Paket Tambahan
                 </button>
               </div>
             )}

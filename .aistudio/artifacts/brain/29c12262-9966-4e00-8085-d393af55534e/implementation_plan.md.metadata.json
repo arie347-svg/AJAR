@@ -1,6 +1,6 @@
 {
-  "summary": "Rencana implementasi untuk penyederhanaan splash screen loading menjadi logo terpusat + Connecting... bertema Neumorphism, penghapusan badge GAS Online/Secret GAS_URL pada halaman login & daftar, serta eliminasi animasi progress menghubungkan saat menekan tombol login atau signup.",
-  "updatedAt": "2026-10-15T14:53:27.405037175Z",
+  "summary": "Implementation plan for Profil page refined redesign: using exact Dashboard royal blue gradient container style for the profile header (photo, name, jabatan, NIP), replacing account/task info with digital signature (Paraf Digital), compact plain text 'kembali' button without box or arrow, compact proportional fonts, and fullscreen fit without vertical scrolling under Neumorphism / Soft UI Modern theme.",
+  "updatedAt": "2026-10-15T16:01:27.456173374Z",
   "requestFeedback": true,
   "userFacing": true
 }

@@ -452,12 +452,13 @@ export function App() {
                     localStorage.setItem('user', JSON.stringify(updated));
                   }}
                   showToast={showToast}
+                  onNavigate={handleNavigate}
                 />
               )}
             </main>
 
-            {/* Mobile Bottom Navigation (Hidden on Dashboard) */}
-            {activePage !== 'dashboard' && (
+            {/* Mobile Bottom Navigation (Hidden on Dashboard & Profil) */}
+            {activePage !== 'dashboard' && activePage !== 'profil' && (
               <BottomNav
                 activePage={activePage}
                 onNavigate={handleNavigate}
