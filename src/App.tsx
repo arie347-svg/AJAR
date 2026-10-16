@@ -453,6 +453,7 @@ export function App() {
                   }}
                   showToast={showToast}
                   onNavigate={handleNavigate}
+                  onBack={() => handleNavigate('dashboard')}
                 />
               )}
             </main>

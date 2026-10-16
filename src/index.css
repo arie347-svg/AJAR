@@ -5,6 +5,12 @@
   --sab: env(safe-area-inset-bottom, 0px);
   --sal: env(safe-area-inset-left, 0px);
   --sar: env(safe-area-inset-right, 0px);
+
+  /* Neumorphism / Soft UI Modern Theme Variables */
+  --neu-bg: #EEF2F6;
+  --neu-surface: #EBF0F8;
+  --neu-shadow-dark: rgba(166, 180, 209, 0.45);
+  --neu-shadow-light: rgba(255, 255, 255, 0.95);
 }
 
 * {
@@ -126,7 +132,7 @@ html, body {
    NEUMORPHISM / SOFT UI MODERN STYLES
    ========================================================================= */
 .neu-bg {
-  background-color: #EBF0F8;
+  background-color: var(--neu-bg, #EEF2F6);
 }
 
 .neu-raised-card {
@@ -138,19 +144,51 @@ html, body {
 }
 
 .neu-flat {
-  background: #EBF0F8;
+  background: var(--neu-bg, #EEF2F6);
   box-shadow: 
     6px 6px 14px rgba(166, 180, 209, 0.42),
     -6px -6px 14px rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.8);
 }
 
-.neu-pressed {
+.neu-pressed,
+.neu-inset {
   background: #E8EEF6;
   box-shadow: 
     inset 3px 3px 6px rgba(166, 180, 209, 0.45),
     inset -3px -3px 6px rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.neu-btn {
+  background: var(--neu-bg, #EEF2F6);
+  box-shadow: 
+    5px 5px 12px rgba(166, 180, 209, 0.45),
+    -5px -5px 12px rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.neu-btn:hover {
+  box-shadow: 
+    7px 7px 15px rgba(166, 180, 209, 0.5),
+    -7px -7px 15px rgba(255, 255, 255, 1);
+  transform: translateY(-1px);
+}
+
+.neu-btn:active {
+  background: #E8EEF6;
+  box-shadow: 
+    inset 3px 3px 6px rgba(166, 180, 209, 0.45),
+    inset -3px -3px 6px rgba(255, 255, 255, 0.95);
+  transform: translateY(0) scale(0.98);
+}
+
+.neu-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .soft-ring {
@@ -245,5 +283,3 @@ html, body {
   box-shadow: inset 3px 3px 6px #c4d3e4, inset -3px -3px 6px #ffffff, 0 0 0 1.5px rgba(37, 99, 235, 0.4);
   background: #f1f6fd;
 }
-
-
