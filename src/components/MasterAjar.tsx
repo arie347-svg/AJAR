@@ -735,7 +735,7 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
                 </div>
                 <div>
                   <h4 className="text-sm font-black text-[#0D162B]">
-                    Tidak Ada Paket Tambahan
+                    Tidak Ada Mata Pelajaran Tambahan
                   </h4>
                 </div>
                 <button
@@ -744,7 +744,7 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
                   className="px-4 py-2 rounded-xl neu-flat active:neu-pressed text-amber-700 hover:text-amber-800 border border-amber-200 font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <Plus className="w-4 h-4 stroke-[2.5]" />
-                  <span>Tambah Paket Tambahan</span>
+                  <span>Tambah Mapel Tambahan</span>
                 </button>
               </div>
             ) : (
@@ -771,10 +771,7 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
                               <Layers className="w-6 h-6 stroke-[2.5]" />
                             </div>
                             <div className="min-w-0">
-                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-700 block">
-                                Paket Tambahan #{idx + 1}
-                              </span>
-                              <h3 className="text-sm sm:text-base font-black text-[#0D162B] truncate mt-0.5">
+                              <h3 className="text-sm sm:text-base font-black text-[#0D162B] truncate">
                                 {mNama || 'Belum Memilih Mapel'}
                               </h3>
                             </div>
@@ -833,7 +830,7 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-extrabold text-amber-800">
-                            Edit Paket Tambahan #{idx + 1}
+                            Konfigurasi Mapel Tambahan
                           </span>
                           <button
                             type="button"
@@ -898,7 +895,7 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
                   className="w-full py-2.5 rounded-xl neu-flat active:neu-pressed text-amber-700 hover:text-amber-800 border border-amber-200/80 font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <Plus className="w-4 h-4 stroke-[2.5]" />
-                  <span>Tambah Paket Mapel Tambahan</span>
+                  <span>Tambah Mapel Tambahan</span>
                 </button>
               </div>
             )}
@@ -992,18 +989,18 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
 
             <h3 className="text-base font-extrabold text-[#0D162B]">
               {confirmModal.type === 'deleteTambahan'
-                ? 'Hapus Paket Tambahan?'
+                ? 'Hapus Mata Pelajaran Tambahan?'
                 : confirmModal.type === 'wali'
                 ? 'Edit Tugas Wali Kelas?'
                 : confirmModal.type === 'utama'
-                ? 'Edit Paket Mapel Utama?'
-                : 'Edit Paket Mapel Tambahan?'}
+                ? 'Edit Mapel Utama?'
+                : 'Edit Mata Pelajaran Tambahan?'}
             </h3>
 
             <p className="text-xs text-slate-500 mt-1 mb-5 font-medium leading-relaxed">
               {confirmModal.type === 'deleteTambahan'
-                ? 'Paket mata pelajaran tambahan ini akan dihapus dari konfigurasi mengajar Anda.'
-                : 'Mata pelajaran dan kelas akan terbuka untuk diedit secara satu paket. Pastikan menyimpan perubahan setelah selesai.'}
+                ? 'Mata pelajaran tambahan ini akan dihapus dari konfigurasi mengajar Anda.'
+                : 'Mata pelajaran dan kelas akan terbuka untuk diedit. Pastikan menyimpan perubahan setelah selesai.'}
             </p>
 
             <div className="grid grid-cols-2 gap-2.5">
@@ -1149,7 +1146,7 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
         <NeuMapelModal
           isOpen={tambahanModalIdx !== null}
           onClose={() => setTambahanModalIdx(null)}
-          title={`Pilih Mata Pelajaran Tambahan #${tambahanModalIdx + 1}`}
+          title="Pilih Mata Pelajaran Tambahan"
           subtitle="Mata pelajaran muatan lokal atau penugasan tambahan"
           accentColor="amber"
           listMapel={listMapel}

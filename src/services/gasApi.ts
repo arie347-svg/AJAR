@@ -557,29 +557,32 @@ function handleLocalFallback<T>(action: string, args: any[]): T {
   }
 
   if (action === 'getMasterSiswa') {
-    const kelas = args[1] || 'XI-IPA 1';
+    const kelas = args[1] || 'XI.1';
     const localSiswa = localStorage.getItem('ajar_siswa_' + kelas);
     if (localSiswa) {
-      return { success: true, siswa: JSON.parse(localSiswa) } as unknown as T;
+      try {
+        const parsed = JSON.parse(localSiswa);
+        return { success: true, data: parsed, siswa: parsed } as unknown as T;
+      } catch {}
     }
     const sampleStudents: SiswaItem[] = [
-      { SiswaID: 'S01', NIS: '20260001', NamaSiswa: 'Achmad Dani Ramadhan', Kelas: kelas, JenisKelamin: 'L' },
-      { SiswaID: 'S02', NIS: '20260002', NamaSiswa: 'Aisyah Putri Nurhaliza', Kelas: kelas, JenisKelamin: 'P' },
-      { SiswaID: 'S03', NIS: '20260003', NamaSiswa: 'Bagas Aditya Pratama', Kelas: kelas, JenisKelamin: 'L' },
-      { SiswaID: 'S04', NIS: '20260004', NamaSiswa: 'Citra Dewi Lestari', Kelas: kelas, JenisKelamin: 'P' },
-      { SiswaID: 'S05', NIS: '20260005', NamaSiswa: 'Dimas Fajar Setiawan', Kelas: kelas, JenisKelamin: 'L' },
-      { SiswaID: 'S06', NIS: '20260006', NamaSiswa: 'Fatimah Zahra', Kelas: kelas, JenisKelamin: 'P' },
-      { SiswaID: 'S07', NIS: '20260007', NamaSiswa: 'Galang Rambu Anarki', Kelas: kelas, JenisKelamin: 'L' },
-      { SiswaID: 'S08', NIS: '20260008', NamaSiswa: 'Hana Khairunnisa', Kelas: kelas, JenisKelamin: 'P' },
+      { SiswaID: 'S01', NIS: '20260001', nisn: '0081234561', NamaSiswa: 'Achmad Dani Ramadhan', Kelas: kelas, JenisKelamin: 'L' },
+      { SiswaID: 'S02', NIS: '20260002', nisn: '0081234562', NamaSiswa: 'Aisyah Putri Nurhaliza', Kelas: kelas, JenisKelamin: 'P' },
+      { SiswaID: 'S03', NIS: '20260003', nisn: '0081234563', NamaSiswa: 'Bagas Aditya Pratama', Kelas: kelas, JenisKelamin: 'L' },
+      { SiswaID: 'S04', NIS: '20260004', nisn: '0081234564', NamaSiswa: 'Citra Dewi Lestari', Kelas: kelas, JenisKelamin: 'P' },
+      { SiswaID: 'S05', NIS: '20260005', nisn: '0081234565', NamaSiswa: 'Dimas Fajar Setiawan', Kelas: kelas, JenisKelamin: 'L' },
+      { SiswaID: 'S06', NIS: '20260006', nisn: '0081234566', NamaSiswa: 'Fatimah Zahra', Kelas: kelas, JenisKelamin: 'P' },
+      { SiswaID: 'S07', NIS: '20260007', nisn: '0081234567', NamaSiswa: 'Galang Rambu Anarki', Kelas: kelas, JenisKelamin: 'L' },
+      { SiswaID: 'S08', NIS: '20260008', nisn: '0081234568', NamaSiswa: 'Hana Khairunnisa', Kelas: kelas, JenisKelamin: 'P' },
     ];
-    return { success: true, siswa: sampleStudents } as unknown as T;
+    return { success: true, data: sampleStudents, siswa: sampleStudents } as unknown as T;
   }
 
   if (action === 'saveSiswaManual') {
     const sData = args[1] || {};
-    const kelas = sData.kelas || 'XI-IPA 1';
-    const res = handleLocalFallback<{ success: boolean; siswa: SiswaItem[] }>('getMasterSiswa', ['', kelas]);
-    const list = res.siswa || [];
+    const kelas = sData.kelas || 'XI.1';
+    const res = handleLocalFallback<{ success: boolean; data?: SiswaItem[]; siswa?: SiswaItem[] }>('getMasterSiswa', ['', kelas]);
+    const list = res.data || res.siswa || [];
     if (sData.siswaId) {
       const idx = list.findIndex(s => s.SiswaID === sData.siswaId);
       if (idx !== -1) {
@@ -604,18 +607,30 @@ function handleLocalFallback<T>(action: string, args: any[]): T {
   }
 
   if (action === 'getAbsensiData') {
-    const [, kelas, , pertemuan] = args;
-    const siswaRes = handleLocalFallback<{ success: boolean; siswa: SiswaItem[] }>('getMasterSiswa', ['', kelas || 'XI-IPA 1']);
-    const siswa = siswaRes.siswa || [];
+    const [, kelas, mapelId, , semester, guruNip] = args;
+    const siswaRes = handleLocalFallback<{ success: boolean; data?: SiswaItem[]; siswa?: SiswaItem[] }>('getMasterSiswa', ['', kelas || 'XI.1']);
+    const siswa = siswaRes.data || siswaRes.siswa || [];
     const absensiMap: Record<string, Record<string, string>> = {};
     const datesMap: Record<string, string> = {};
-    const today = new Date().toISOString().split('T')[0];
 
-    siswa.forEach(s => {
-      const id = s.SiswaID || s.siswaId || '';
-      absensiMap[id] = { [String(pertemuan || 1)]: 'H' };
-    });
-    datesMap[String(pertemuan || 1)] = today;
+    const nipSuffix = guruNip ? `_${guruNip}` : '';
+    const cacheKey = `ajar_absensi_${kelas || ''}_${mapelId || ''}_${semester || 'Ganjil'}${nipSuffix}`;
+    let saved = localStorage.getItem(cacheKey);
+    if (!saved) {
+      // Fallback backward-compatible jika sebelumnya tanpa suffix NIP
+      saved = localStorage.getItem(`ajar_absensi_${kelas || ''}_${mapelId || ''}_${semester || 'Ganjil'}`);
+    }
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return {
+          success: true,
+          siswa,
+          absensiMap: parsed.absensiMap || {},
+          datesMap: parsed.datesMap || {},
+        } as unknown as T;
+      } catch {}
+    }
 
     return {
       success: true,
@@ -626,6 +641,30 @@ function handleLocalFallback<T>(action: string, args: any[]): T {
   }
 
   if (action === 'saveAbsensiData') {
+    const payload = args[1] || {};
+    const nipSuffix = payload.guruNip ? `_${payload.guruNip}` : '';
+    const cacheKey = `ajar_absensi_${payload.kelas || ''}_${payload.mapelId || ''}_${payload.semester || 'Ganjil'}${nipSuffix}`;
+    let existingData = {
+      absensiMap: {} as Record<string, Record<string, string>>,
+      datesMap: {} as Record<string, string>,
+    };
+    const saved = localStorage.getItem(cacheKey);
+    if (saved) {
+      try {
+        existingData = JSON.parse(saved);
+      } catch {}
+    }
+
+    if (payload.pertemuan) {
+      const pKey = String(payload.pertemuan);
+      existingData.datesMap[pKey] = payload.tanggal || new Date().toISOString().split('T')[0];
+      Object.entries(payload.records || {}).forEach(([sId, st]) => {
+        if (!existingData.absensiMap[sId]) existingData.absensiMap[sId] = {};
+        existingData.absensiMap[sId][pKey] = String(st);
+      });
+      localStorage.setItem(cacheKey, JSON.stringify(existingData));
+    }
+
     return { success: true, message: 'Data presensi berhasil disimpan ke basis data!' } as unknown as T;
   }
 

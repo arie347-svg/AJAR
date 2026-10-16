@@ -38,10 +38,11 @@ export const Nilai: React.FC<NilaiProps> = ({ token, pengajaranList, showToast }
       ]);
 
       if (res && res.success) {
-        setSiswaList(res.siswa || []);
+        const students: SiswaItem[] = res.siswa || res.data || [];
+        setSiswaList(students);
         const loadedScores: Record<string, number | ''> = {};
 
-        (res.siswa || []).forEach((s: SiswaItem) => {
+        students.forEach((s: SiswaItem) => {
           const sId = s.SiswaID || s.siswaId || '';
           if (selectedTarget === 'pas') {
             const val = res.pasMap?.[sId];

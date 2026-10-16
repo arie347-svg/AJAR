@@ -1,6 +1,6 @@
 {
-  "summary": "Implementation plan for Profil page refined redesign: using exact Dashboard royal blue gradient container style for the profile header (photo, name, jabatan, NIP), replacing account/task info with digital signature (Paraf Digital), compact plain text 'kembali' button without box or arrow, compact proportional fonts, and fullscreen fit without vertical scrolling under Neumorphism / Soft UI Modern theme.",
-  "updatedAt": "2026-10-15T16:01:27.456173374Z",
+  "summary": "Rencana Implementasi Alur Kerja Presensi Siswa:\n1. Alur pemilihan pertemuan: Pertama kali masuk halaman presensi rombel, sistem mewajibkan guru memilih nomor pertemuan terlebih dahulu ('-- Pilih Pertemuan --'). Tanggal presensi dan tabel daftar siswa hanya akan muncul setelah pertemuan dipilih.\n2. Tampilan status Submitted: Jika pertemuan yang dipilih sudah pernah disimpan, sistem langsung menampilkan status 'Submitted' dengan opsi tombol Edit untuk membuka kunci koreksi data.\n3. Penanda visual status pertemuan pada dropdown: Memberikan penanda visual (✓ Tersimpan) pada opsi pertemuan yang sudah diisi.\n4. Isolasi data presensi multi-guru & multi-mapel: Menggunakan komposit key ketat (Kelas + MapelID + Semester + Tahun Ajaran + NIP Guru) baik di client, local cache, maupun payload backend GAS sehingga data guru mapel A tidak akan pernah tertukar atau menimpa guru mapel B di kelas yang sama.",
+  "updatedAt": "2026-10-16T10:31:47.337308643Z",
   "requestFeedback": true,
   "userFacing": true
 }

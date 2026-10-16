@@ -3,6 +3,8 @@ import { Camera, FileSignature, Edit3, X, User as UserIcon, AlertCircle } from '
 import { User, ReferencesMap, PageId } from '../types';
 import { callGasApi } from '../services/gasApi';
 import { toProperCase, formatProperCaseLive } from '../utils/textUtils';
+import { ImageCropModal } from './ImageCropModal';
+import { removeSignatureBackground } from '../utils/imageProcessing';
 
 interface ProfilProps {
   token: string;
@@ -25,6 +27,10 @@ export const Profil: React.FC<ProfilProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [activeTabModal, setActiveTabModal] = useState<'profil' | 'password'>('profil');
+
+  // Modal potong foto profil manual 1:1
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [rawPhotoSrc, setRawPhotoSrc] = useState<string>('');
 
   // Form fields for single edit modal (Kecuali NIP dan Foto, serta tanpa Username)
   const [editGelarDepan, setEditGelarDepan] = useState(currentUser?.gelarDepan || '');
@@ -124,55 +130,112 @@ export const Profil: React.FC<ProfilProps> = ({
     }
   };
 
-  const handleUploadMedia = (type: 'FOTO' | 'PARAF', e: React.ChangeEvent<HTMLInputElement>) => {
+  // 1. Memilih Foto Profil: Buka modal potong manual 1:1
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    showToast('Mengunggah berkas...', 'info');
     const reader = new FileReader();
-    reader.onload = async evt => {
+    reader.onload = evt => {
       const dataUrl = evt.target?.result as string;
-      const base64 = dataUrl.split(',')[1];
-      try {
-        const res = await callGasApi('uploadMediaFile', [
-          token,
-          base64,
-          file.name,
-          file.type,
-          type,
-        ]);
-        if (res && res.success) {
-          showToast(res.message || 'Berkas berhasil diunggah!', 'success');
-          if (currentUser) {
-            const updated = { ...currentUser };
-            if (type === 'FOTO') updated.fotoUrl = res.fileUrl || dataUrl;
-            if (type === 'PARAF') updated.parafUrl = res.parafDataUrl || dataUrl;
-            onUpdateUser(updated);
-          }
-        } else {
-          if (currentUser) {
-            const updated = { ...currentUser };
-            if (type === 'FOTO') updated.fotoUrl = dataUrl;
-            if (type === 'PARAF') updated.parafUrl = dataUrl;
-            onUpdateUser(updated);
-          }
-          showToast('Berkas berhasil disimpan secara lokal.', 'success');
-        }
-      } catch {
-        showToast('Gagal mengunggah berkas.', 'error');
-      }
+      setRawPhotoSrc(dataUrl);
+      setCropModalOpen(true);
     };
     reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  // 2. Simpan Foto Profil Hasil Potong Manual 1:1
+  const handleCroppedPhotoSave = async (result: { dataUrl: string; base64: string }) => {
+    showToast('Mengunggah foto profil 1:1...', 'info');
+    try {
+      const res = await callGasApi('uploadMediaFile', [
+        token,
+        result.base64,
+        'profile_photo.jpg',
+        'image/jpeg',
+        'FOTO',
+      ]);
+      if (res && res.success) {
+        showToast(res.message || 'Foto profil berhasil diperbarui!', 'success');
+        if (currentUser) {
+          const updated = { ...currentUser, fotoUrl: res.fileUrl || result.dataUrl };
+          onUpdateUser(updated);
+        }
+      } else {
+        if (currentUser) {
+          const updated = { ...currentUser, fotoUrl: result.dataUrl };
+          onUpdateUser(updated);
+        }
+        showToast('Foto profil disimpan secara lokal.', 'success');
+      }
+    } catch {
+      showToast('Gagal mengunggah foto profil.', 'error');
+    }
+  };
+
+  // 3. Upload Paraf Digital: Otomatis Hapus Latar Belakang Kertas Menjadi Transparan
+  const handleParafSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    showToast('Memproses paraf (menghapus latar belakang otomatis)...', 'info');
+    try {
+      const transparentResult = await removeSignatureBackground(file);
+      showToast('Mengunggah paraf transparan...', 'info');
+
+      const res = await callGasApi('uploadMediaFile', [
+        token,
+        transparentResult.base64,
+        'paraf_transparan.png',
+        'image/png',
+        'PARAF',
+      ]);
+
+      if (res && res.success) {
+        showToast(res.message || 'Paraf transparan berhasil disimpan!', 'success');
+        if (currentUser) {
+          const updated = {
+            ...currentUser,
+            parafUrl: res.parafDataUrl || transparentResult.dataUrl,
+          };
+          onUpdateUser(updated);
+        }
+      } else {
+        if (currentUser) {
+          const updated = {
+            ...currentUser,
+            parafUrl: transparentResult.dataUrl,
+          };
+          onUpdateUser(updated);
+        }
+        showToast('Paraf transparan disimpan secara lokal.', 'success');
+      }
+    } catch (err: any) {
+      showToast('Gagal memproses paraf: ' + (err?.message || 'Format tidak didukung'), 'error');
+    } finally {
+      e.target.value = '';
+    }
   };
 
   return (
-    <div className="h-full w-full neu-bg bg-[#EEF2F6] flex flex-col justify-between gap-4 p-4 sm:p-6 rounded-[28px] text-slate-800 select-none overflow-y-auto no-scrollbar antialiased max-w-lg mx-auto">
-      {/* KARTU PROFIL UTAMA NEUMORPHISM / SOFT UI MODERN */}
-      <div className="w-full neu-raised-card bg-[#EEF2F6] rounded-[28px] p-6 sm:p-8 flex flex-col items-center text-center my-auto">
+    <div className="h-full w-full flex flex-col justify-between gap-4 p-2 sm:p-4 text-slate-800 select-none overflow-y-auto no-scrollbar antialiased max-w-md mx-auto">
+      {/* KARTU PROFIL UTAMA ROYAL BLUE NEUMORPHIC (GAYA HERO CARD BERANDA) */}
+      <div className="w-full rounded-[28px] p-6 sm:p-8 bg-gradient-to-br from-[#1A56DB] via-[#2167F3] to-[#1244A8] border border-white/30 relative overflow-hidden shadow-[-6px_-6px_16px_rgba(255,255,255,0.9),_8px_10px_24px_rgba(20,73,184,0.45),_inset_1.5px_1.5px_3px_rgba(255,255,255,0.35)] text-white flex flex-col items-center text-center my-auto shrink-0">
         
+        {/* Soft Decorative Ambient Neumorphic Rings & Blur Glow */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-12 -right-12 w-44 h-44 rounded-full border-[12px] border-white/15 blur-[0.5px]"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-16 -left-10 w-40 h-40 rounded-full bg-white/10 blur-2xl"
+        />
+
         {/* 1. BINGKAI FOTO DIPERBESAR (w-36 h-36) & DI TENGAH (mx-auto) + TOMBOL IKON EDIT FOTO */}
-        <div className="relative w-36 h-36 mx-auto mb-5 shrink-0">
-          <div className="w-full h-full rounded-full neu-inset bg-[#E8EEF6] p-2.5 flex items-center justify-center overflow-hidden">
+        <div className="relative w-36 h-36 mx-auto mb-5 shrink-0 z-10">
+          <div className="w-full h-full rounded-full p-1.5 bg-white/20 border-2 border-white/50 shadow-[inset_2px_2px_6px_rgba(10,35,90,0.35),_inset_-2px_-2px_6px_rgba(255,255,255,0.4),_0_8px_20px_rgba(0,0,0,0.25)] flex items-center justify-center overflow-hidden backdrop-blur-xs">
             {currentUser?.fotoUrl ? (
               <img
                 src={currentUser.fotoUrl}
@@ -180,8 +243,8 @@ export const Profil: React.FC<ProfilProps> = ({
                 className="w-full h-full object-cover rounded-full"
               />
             ) : (
-              <div className="w-full h-full rounded-full neu-flat bg-[#EEF2F6] text-[#1A56DB] flex items-center justify-center font-black">
-                <UserIcon className="w-14 h-14 stroke-[2]" />
+              <div className="w-full h-full rounded-full bg-white/25 text-white flex items-center justify-center font-black">
+                <UserIcon className="w-16 h-16 stroke-[2]" />
               </div>
             )}
           </div>
@@ -190,75 +253,77 @@ export const Profil: React.FC<ProfilProps> = ({
             type="file"
             ref={photoInputRef}
             accept="image/*"
-            onChange={e => handleUploadMedia('FOTO', e)}
+            onChange={handlePhotoSelect}
             className="hidden"
           />
           <button
             type="button"
             onClick={() => photoInputRef.current?.click()}
-            className="absolute bottom-1 right-1 w-10 h-10 rounded-full neu-btn bg-[#EEF2F6] text-[#1A56DB] hover:text-blue-700 flex items-center justify-center cursor-pointer active:scale-95 transition-all"
-            title="Ganti Foto Profil"
+            className="absolute bottom-1 right-1 w-10 h-10 rounded-full bg-white text-[#1A56DB] hover:bg-blue-50 hover:text-blue-700 flex items-center justify-center cursor-pointer active:scale-95 transition-all shadow-[0_4px_12px_rgba(0,0,0,0.25),_inset_0_1px_1px_rgba(255,255,255,0.9)] border border-white/60"
+            title="Ganti Foto Profil (Potong Manual 1:1)"
           >
             <Camera className="w-4 h-4 stroke-[2.5]" />
           </button>
         </div>
 
         {/* 2. NAMA LENGKAP */}
-        <h2 className="text-base sm:text-lg font-black text-[#0D162B] tracking-tight leading-snug">
+        <h2 className="text-lg sm:text-xl font-black text-white tracking-tight leading-snug drop-shadow-sm z-10">
           {currentUser?.namaTampilan || currentUser?.namaLengkap || 'Nama Guru'}
         </h2>
 
         {/* 3. JABATAN */}
-        <p className="text-xs sm:text-sm text-[#1A56DB] font-extrabold mt-1">
+        <p className="text-xs sm:text-sm text-blue-100 font-extrabold mt-1 tracking-wide z-10">
           {currentUser?.jabatan || 'Guru Mata Pelajaran'}
         </p>
 
         {/* 4. NIP */}
-        <div className="mt-2.5 px-4 py-1.5 rounded-full neu-inset bg-[#E8EEF6] text-xs text-slate-600 font-mono font-bold">
+        <div className="mt-3 px-4 py-1.5 rounded-full bg-white/15 border border-white/30 text-xs text-white font-mono font-bold backdrop-blur-xs shadow-inner z-10">
           NIP. {currentUser?.nip || '-'}
         </div>
 
-        {/* 5. KETERANGAN PARAF (Tampil "Belum ada paraf" jika Paraf kosong) */}
-        <div className="mt-4 w-full flex flex-col items-center">
+        {/* 5. KETERANGAN PARAF DIGITAL */}
+        <div className="mt-5 w-full flex flex-col items-center z-10">
           {parafUrl ? (
-            <div className="w-full max-w-[220px] py-2.5 px-4 rounded-2xl neu-inset bg-[#E8EEF6] flex flex-col items-center justify-center gap-1.5">
-              <span className="text-[10px] font-extrabold text-emerald-600 flex items-center gap-1">
+            <div className="w-full max-w-[240px] py-3 px-4 rounded-2xl bg-white/95 border border-white/60 shadow-[inset_0_1px_3px_rgba(0,0,0,0.06),_0_6px_20px_rgba(10,35,90,0.25)] flex flex-col items-center justify-center gap-1.5">
+              <span className="text-[10px] font-black text-emerald-700 flex items-center gap-1">
                 <FileSignature className="w-3.5 h-3.5 stroke-[2.5]" />
-                Paraf Digital Tersedia
+                Paraf Digital Tersedia (Transparan)
               </span>
-              <img
-                src={parafUrl}
-                alt="Paraf Guru"
-                className="max-h-14 object-contain"
-              />
+              <div className="max-h-16 flex items-center justify-center py-1">
+                <img
+                  src={parafUrl}
+                  alt="Paraf Guru"
+                  className="max-h-14 object-contain"
+                />
+              </div>
             </div>
           ) : (
-            <div className="px-4 py-2 rounded-xl neu-inset bg-[#E8EEF6] text-amber-600 text-xs font-extrabold flex items-center justify-center gap-1.5">
+            <div className="px-4 py-2 rounded-xl bg-white/15 border border-white/25 text-amber-200 text-xs font-extrabold flex items-center justify-center gap-1.5 backdrop-blur-xs">
               <AlertCircle className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
               <span>Belum ada paraf</span>
             </div>
           )}
         </div>
 
-        {/* 6. TOMBOL EDIT DI BAWAH KETERANGAN PARAF */}
+        {/* 6. TOMBOL EDIT (GAYA TOMBOL BERANDA ISI JURNAL LKH) */}
         <button
           type="button"
           onClick={handleOpenEdit}
-          className="mt-6 w-full max-w-[220px] py-2.5 px-5 rounded-2xl neu-btn bg-[#EEF2F6] text-xs font-black text-[#0D162B] hover:text-[#1A56DB] flex items-center justify-center gap-2 cursor-pointer transition-all"
+          className="mt-6 w-full max-w-[240px] py-3 px-6 rounded-2xl bg-white text-xs font-black text-[#1A56DB] hover:bg-blue-50 flex items-center justify-center gap-2 cursor-pointer shadow-[0_4px_16px_rgba(0,0,0,0.2),_inset_0_1px_1px_rgba(255,255,255,0.9)] active:scale-95 transition-all z-10 border border-white/50"
         >
-          <Edit3 className="w-4 h-4 stroke-[2.4]" />
-          <span>Edit</span>
+          <Edit3 className="w-4 h-4 stroke-[2.5]" />
+          <span>Edit Data &amp; Paraf</span>
         </button>
       </div>
 
-      {/* 7. TOMBOL / TULISAN "KEMBALI" DI POSISI PALING BAWAH */}
-      <div className="text-center py-1 shrink-0">
+      {/* 7. TOMBOL KEMBALI DI BAWAH (BACKGROUND NEUMORPHIC LUAR) */}
+      <div className="text-center py-2 shrink-0">
         <button
           type="button"
           onClick={handleBack}
-          className="text-xs font-extrabold text-slate-600 hover:text-slate-900 underline underline-offset-4 cursor-pointer transition-colors"
+          className="text-xs font-black text-slate-500 hover:text-slate-800 underline underline-offset-4 cursor-pointer transition-colors"
         >
-          Kembali
+          Kembali ke Beranda
         </button>
       </div>
 
@@ -420,7 +485,7 @@ export const Profil: React.FC<ProfilProps> = ({
                     <label className="text-[11px] font-extrabold text-slate-700 block mb-1">
                       Paraf Digital Guru
                     </label>
-                    <div className="h-20 neu-pressed bg-[#E8EEF6] rounded-xl flex items-center justify-center p-2 mb-2">
+                    <div className="h-20 neu-pressed bg-[#E8EEF6] rounded-xl flex items-center justify-center p-2 mb-2 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:12px_12px]">
                       {parafUrl ? (
                         <img
                           src={parafUrl}
@@ -437,7 +502,7 @@ export const Profil: React.FC<ProfilProps> = ({
                       type="file"
                       ref={parafInputRef}
                       accept="image/*"
-                      onChange={e => handleUploadMedia('PARAF', e)}
+                      onChange={handleParafSelect}
                       className="hidden"
                     />
                     <button
@@ -513,6 +578,14 @@ export const Profil: React.FC<ProfilProps> = ({
           </div>
         </div>
       )}
+
+      {/* MODAL POTONG FOTO MANUAL 1:1 */}
+      <ImageCropModal
+        isOpen={cropModalOpen}
+        imageSrc={rawPhotoSrc}
+        onClose={() => setCropModalOpen(false)}
+        onCropComplete={handleCroppedPhotoSave}
+      />
     </div>
   );
 };

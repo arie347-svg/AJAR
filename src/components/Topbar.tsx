@@ -27,7 +27,9 @@ export const Topbar: React.FC<TopbarProps> = ({ activePage, onNavigate, onLogout
   const isDashboard = activePage === 'dashboard';
   const isMasterAjar = activePage === 'master-ajar';
   const isProfil = activePage === 'profil';
-  const isSoftTheme = isDashboard || isMasterAjar || isProfil;
+  const isMasterSiswa = activePage === 'master-siswa';
+  const isAbsensi = activePage === 'absensi';
+  const isSoftTheme = isDashboard || isMasterAjar || isProfil || isMasterSiswa || isAbsensi;
 
   return (
     <>
@@ -39,7 +41,7 @@ export const Topbar: React.FC<TopbarProps> = ({ activePage, onNavigate, onLogout
         }`}
       >
         <div className="flex items-center space-x-2.5 min-w-0 pr-2">
-          {!isDashboard && !isMasterAjar && !isProfil && (
+          {!isDashboard && !isMasterAjar && !isProfil && !isMasterSiswa && !isAbsensi && (
             <button
               onClick={() => onNavigate('dashboard')}
               className="flex items-center justify-center p-2 rounded-xl bg-white/15 hover:bg-white/25 active:bg-white/30 text-white font-bold text-xs active:scale-95 transition-all shadow-xs backdrop-blur-md cursor-pointer shrink-0"
@@ -71,6 +73,24 @@ export const Topbar: React.FC<TopbarProps> = ({ activePage, onNavigate, onLogout
             <div className="min-w-0">
               <h1 className="text-lg sm:text-xl font-black text-[#0D162B] tracking-tight leading-none">
                 Profil Guru
+              </h1>
+              <p className="text-[10px] sm:text-[11px] font-semibold text-slate-500 tracking-tight mt-0.5 truncate">
+                MAN 1 Majalengka
+              </p>
+            </div>
+          ) : isMasterSiswa ? (
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl font-black text-[#0D162B] tracking-tight leading-none">
+                Data Siswa
+              </h1>
+              <p className="text-[10px] sm:text-[11px] font-semibold text-slate-500 tracking-tight mt-0.5 truncate">
+                MAN 1 Majalengka
+              </p>
+            </div>
+          ) : isAbsensi ? (
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl font-black text-[#0D162B] tracking-tight leading-none">
+                Presensi Siswa
               </h1>
               <p className="text-[10px] sm:text-[11px] font-semibold text-slate-500 tracking-tight mt-0.5 truncate">
                 MAN 1 Majalengka

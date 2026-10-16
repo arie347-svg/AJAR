@@ -90,12 +90,14 @@ export interface SiswaItem {
   siswaId?: string;
   NIS?: string;
   nis?: string;
+  nisn?: string;
   NamaSiswa?: string;
   namaSiswa?: string;
   nama?: string;
   Kelas?: string;
   kelas?: string;
   JenisKelamin?: string;
+  jenisKelamin?: string;
   jk?: string;
   Status?: string;
 }

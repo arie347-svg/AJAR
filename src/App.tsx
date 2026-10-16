@@ -363,7 +363,7 @@ export function App() {
           {/* Main Content Area */}
           <div
             className={`flex-1 flex flex-col h-full overflow-hidden relative ${
-              activePage === 'dashboard' || activePage === 'master-ajar' ? 'bg-[#EBF0F8]' : ''
+              activePage === 'dashboard' || activePage === 'master-ajar' || activePage === 'profil' || activePage === 'master-siswa' || activePage === 'absensi' ? 'bg-[#EBF0F8]' : ''
             }`}
           >
             <Topbar
@@ -379,6 +379,10 @@ export function App() {
                   ? 'flex-1 h-full min-h-0 overflow-hidden p-3 sm:p-4 max-w-xl w-full mx-auto flex flex-col'
                   : activePage === 'master-ajar'
                   ? 'flex-1 h-full min-h-0 overflow-hidden p-2.5 sm:p-4 max-w-5xl w-full mx-auto flex flex-col'
+                  : activePage === 'profil'
+                  ? 'flex-1 h-full min-h-0 overflow-y-auto no-scrollbar p-3 sm:p-4 max-w-lg w-full mx-auto flex flex-col'
+                  : activePage === 'master-siswa' || activePage === 'absensi'
+                  ? 'flex-1 h-full min-h-0 overflow-hidden p-3 sm:p-4 max-w-xl w-full mx-auto flex flex-col'
                   : 'flex-1 overflow-y-auto overscroll-contain touch-scroll p-3.5 sm:p-5 max-w-4xl w-full mx-auto'
               }
             >
@@ -404,6 +408,7 @@ export function App() {
                 <MasterSiswa
                   token={token}
                   listKelas={masterAjarData.listKelas || references.Kelas}
+                  pengajaranList={pengajaranList}
                   showToast={showToast}
                 />
               )}
@@ -412,6 +417,7 @@ export function App() {
                 <Absensi
                   token={token}
                   pengajaranList={pengajaranList}
+                  currentUser={currentUser}
                   showToast={showToast}
                 />
               )}
