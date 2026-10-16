@@ -29,22 +29,18 @@ export const Topbar: React.FC<TopbarProps> = ({ activePage, onNavigate, onLogout
   const isProfil = activePage === 'profil';
   const isMasterSiswa = activePage === 'master-siswa';
   const isAbsensi = activePage === 'absensi';
-  const isSoftTheme = isDashboard || isMasterAjar || isProfil || isMasterSiswa || isAbsensi;
+  const isSoftTheme = true;
 
   return (
     <>
       <header
-        className={`safe-top-padding px-4 pb-3 flex items-center justify-between sticky top-0 z-30 transition-colors select-none ${
-          isSoftTheme
-            ? 'bg-[#EBF0F8]/95 backdrop-blur-xl border-b border-[#d4deeb] shadow-xs text-slate-800'
-            : 'bg-white/10 backdrop-blur-xl text-white border-b border-white/10 shadow-lg shadow-black/10'
-        }`}
+        className="safe-top-padding px-4 pb-3 flex items-center justify-between sticky top-0 z-30 transition-colors select-none bg-[#EBF0F8]/95 backdrop-blur-xl border-b border-[#d4deeb] shadow-xs text-slate-800"
       >
         <div className="flex items-center space-x-2.5 min-w-0 pr-2">
           {!isDashboard && !isMasterAjar && !isProfil && !isMasterSiswa && !isAbsensi && (
             <button
               onClick={() => onNavigate('dashboard')}
-              className="flex items-center justify-center p-2 rounded-xl bg-white/15 hover:bg-white/25 active:bg-white/30 text-white font-medium text-xs active:scale-95 transition-all shadow-xs backdrop-blur-md cursor-pointer shrink-0"
+              className="flex items-center justify-center p-2 rounded-xl neu-btn text-slate-700 active:scale-95 transition-all shadow-xs cursor-pointer shrink-0"
               title="Kembali ke Beranda"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -97,11 +93,11 @@ export const Topbar: React.FC<TopbarProps> = ({ activePage, onNavigate, onLogout
               </p>
             </div>
           ) : (
-            <div>
-              <h1 className="text-base font-semibold text-white leading-tight">
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-lg font-semibold text-[#0D162B] tracking-tight leading-none">
                 {titleMap[activePage] || 'Dashboard'}
               </h1>
-              <p className="text-[11px] font-medium text-[#fde047] uppercase tracking-wider">
+              <p className="text-[11px] font-normal text-slate-500 tracking-tight mt-0.5 truncate">
                 MAN 1 Majalengka
               </p>
             </div>

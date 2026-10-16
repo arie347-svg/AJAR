@@ -21,6 +21,7 @@ export interface User {
   namaAtasan?: string;
   fotoUrl?: string;
   parafUrl?: string;
+  tahunAjaran?: string;
 }
 
 export interface RefItem {

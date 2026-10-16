@@ -45,15 +45,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // 1. HANDLER GET: Health Check & Status Koneksi ke Google Apps Script
   if (req.method === 'GET') {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     const startTime = Date.now();
     const maskedUrl =
       gasUrl.length > 35
         ? `${gasUrl.substring(0, 38)}...${gasUrl.substring(gasUrl.length - 8)}`
         : gasUrl;
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 24000);
+
     try {
       const pingUrl = gasUrl.includes('?') ? `${gasUrl}&action=ping` : `${gasUrl}?action=ping`;
-      const pingRes = await fetch(pingUrl, { redirect: 'follow' });
+      const pingRes = await fetch(pingUrl, {
+        redirect: 'follow',
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
       const latencyMs = Date.now() - startTime;
       const isOk = pingRes.status >= 200 && pingRes.status < 400;
 
@@ -69,13 +77,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           : `Respon GAS kode status: ${pingRes.status}`,
       });
     } catch (err: any) {
+      clearTimeout(timeoutId);
+      const isTimeout = err?.name === 'AbortError';
       return res.status(503).json({
         success: false,
         connected: false,
         source: gasUrlSource,
         maskedUrl,
         latencyMs: Date.now() - startTime,
-        message: 'Gagal terhubung ke GAS: ' + (err?.message || 'Network error'),
+        message: isTimeout
+          ? 'Waktu tunggu koneksi ke GAS habis saat cold-start (24s)'
+          : 'Gagal terhubung ke GAS: ' + (err?.message || 'Network error'),
       });
     }
   }

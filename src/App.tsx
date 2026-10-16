@@ -84,23 +84,36 @@ export function App() {
   };
 
   // Inisialisasi sistem: Verifikasi nyata koneksi Google Apps Script & sinkronisasi Spreadsheet
-  const runSystemInitialization = useCallback(async () => {
+  const runSystemInitialization = useCallback(async (isManualRetry = false) => {
     setLoadingSplash(true);
     setSplashPhase('checking');
     setSplashProgress(25);
     setSplashStatusText('Memeriksa koneksi sistem...');
     setSplashDetailText('Menghubungi runtime Google Apps Script via proxy server');
 
+    // Auto-dismiss timer: cegah splash screen mengunci pengguna jika GAS sedang cold-start (>2.4s)
+    let autoDismissTimer: NodeJS.Timeout | null = null;
+    if (!isManualRetry) {
+      autoDismissTimer = setTimeout(() => {
+        setLoadingSplash(false);
+      }, 2400);
+    }
+
     try {
-      // 1. Verifikasi koneksi nyata ke Google Apps Script dan secret GAS_URL
-      const conn = await checkGasConnection(14000);
+      // 1. Verifikasi koneksi nyata ke Google Apps Script dan secret GAS_URL (toleransi cold start 25s)
+      const conn = await checkGasConnection(25000);
       setGasConnection(conn);
 
       if (!conn.connected) {
-        setSplashPhase('error');
-        setSplashStatusText('Gagal Terhubung ke Google Apps Script');
-        setSplashDetailText(conn.message || 'Endpoint GAS tidak merespon dalam batas waktu');
-        setSplashProgress(45);
+        if (isManualRetry) {
+          setSplashPhase('error');
+          setSplashStatusText('Koneksi ke GAS Tertunda');
+          setSplashDetailText(conn.message || 'Server sedang cold-start atau offline');
+          setSplashProgress(45);
+        } else {
+          if (autoDismissTimer) clearTimeout(autoDismissTimer);
+          setLoadingSplash(false);
+        }
         return;
       }
 
@@ -141,26 +154,32 @@ export function App() {
           `Berhasil memuat ${kelasList.length} Rombel Kelas & ${mapelList.length} Mata Pelajaran`
         );
 
-        // Tahan tampilan status sukses sejenak (800ms) agar pengguna memiliki konfirmasi visual nyata
+        if (autoDismissTimer) clearTimeout(autoDismissTimer);
         setTimeout(() => {
           setLoadingSplash(false);
-        }, 800);
+        }, 500);
       } else {
         // GAS merespon tetapi data referensi tidak lengkap -> fallback ke cache
         setSplashPhase('connected');
         setSplashProgress(100);
         setSplashStatusText('Sistem Terhubung');
         setSplashDetailText(`Koneksi aktif via ${conn.source}`);
+        if (autoDismissTimer) clearTimeout(autoDismissTimer);
         setTimeout(() => {
           setLoadingSplash(false);
-        }, 700);
+        }, 400);
       }
     } catch (err: any) {
       console.warn('[App] Error inisialisasi GAS:', err);
-      setSplashPhase('error');
-      setSplashStatusText('Koneksi ke GAS Terkendala');
-      setSplashDetailText(err?.message || 'Waktu koneksi habis saat menghubungi server');
-      setSplashProgress(45);
+      if (isManualRetry) {
+        setSplashPhase('error');
+        setSplashStatusText('Koneksi ke GAS Terkendala');
+        setSplashDetailText(err?.message || 'Waktu koneksi habis saat menghubungi server');
+        setSplashProgress(45);
+      } else {
+        if (autoDismissTimer) clearTimeout(autoDismissTimer);
+        setLoadingSplash(false);
+      }
     }
   }, []);
 
@@ -305,7 +324,7 @@ export function App() {
   };
 
   return (
-    <div className="h-full w-full flex flex-col md:flex-row relative overflow-hidden bg-gradient-to-br from-[#001f26] via-[#003844] to-[#005f73]">
+    <div className="h-full w-full flex flex-col md:flex-row relative overflow-hidden bg-[#EEF2F6]">
       <Toast toasts={toasts} onDismiss={dismissToast} />
       <PWAInstallModal />
 
@@ -349,7 +368,7 @@ export function App() {
                   <div className="flex items-center gap-2 mt-1">
                     <button
                       type="button"
-                      onClick={runSystemInitialization}
+                      onClick={() => runSystemInitialization(true)}
                       className="py-2 px-3.5 rounded-xl neu-btn-primary text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95 transition-transform"
                     >
                       <RefreshCw className="w-3.5 h-3.5" />
@@ -391,11 +410,7 @@ export function App() {
           />
 
           {/* Main Content Area */}
-          <div
-            className={`flex-1 flex flex-col h-full overflow-hidden relative ${
-              activePage === 'dashboard' || activePage === 'master-ajar' || activePage === 'profil' || activePage === 'master-siswa' || activePage === 'absensi' ? 'bg-[#EBF0F8]' : ''
-            }`}
-          >
+          <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-[#EEF2F6]">
             <Topbar
               activePage={activePage}
               onNavigate={handleNavigate}
@@ -413,7 +428,7 @@ export function App() {
                   ? 'flex-1 h-full min-h-0 overflow-y-auto no-scrollbar p-3 sm:p-4 max-w-lg w-full mx-auto flex flex-col'
                   : activePage === 'master-siswa'
                   ? 'flex-1 h-full min-h-0 overflow-hidden p-3 sm:p-4 max-w-xl w-full mx-auto flex flex-col'
-                  : activePage === 'absensi'
+                  : activePage === 'absensi' || activePage === 'nilai' || activePage === 'lkh'
                   ? 'flex-1 h-full min-h-0 overflow-hidden px-3 pt-2 pb-16 md:pb-3 sm:px-4 max-w-xl w-full mx-auto flex flex-col'
                   : 'flex-1 overflow-y-auto overscroll-contain touch-scroll p-3.5 sm:p-5 max-w-4xl w-full mx-auto'
               }
@@ -459,7 +474,9 @@ export function App() {
                 <Nilai
                   token={token}
                   pengajaranList={pengajaranList}
+                  currentUser={currentUser}
                   showToast={showToast}
+                  onNavigate={handleNavigate}
                 />
               )}
 
@@ -469,6 +486,7 @@ export function App() {
                   currentUser={currentUser}
                   pengajaranList={pengajaranList}
                   showToast={showToast}
+                  onNavigate={handleNavigate}
                 />
               )}
 

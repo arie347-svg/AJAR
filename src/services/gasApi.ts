@@ -213,9 +213,10 @@ export async function warmUpGasConnection(): Promise<boolean> {
   isWarmingUp = true;
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000);
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
     const res = await fetch('/api/gas/status', {
       method: 'GET',
+      headers: { 'Accept': 'application/json' },
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
@@ -234,7 +235,7 @@ export async function warmUpGasConnection(): Promise<boolean> {
 /**
  * Memeriksa status nyata koneksi backend ke Google Apps Script dan secret GAS_URL.
  */
-export async function checkGasConnection(timeoutMs = 12000): Promise<GasConnectionInfo> {
+export async function checkGasConnection(timeoutMs = 25000): Promise<GasConnectionInfo> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -257,15 +258,18 @@ export async function checkGasConnection(timeoutMs = 12000): Promise<GasConnecti
       source: data?.source || 'Server',
       maskedUrl: data?.maskedUrl || '',
       latencyMs: data?.latencyMs,
-      message: data?.message || (isConnected ? 'Terhubung ke Google Apps Script' : 'Respon tidak valid'),
+      message: data?.message || (isConnected ? 'Terhubung ke Google Apps Script' : 'Respon server tidak valid'),
     };
   } catch (err: any) {
     clearTimeout(timeoutId);
+    const isTimeout = err?.name === 'AbortError';
     return {
       connected: false,
       source: 'Offline / Proxy Error',
       maskedUrl: '',
-      message: err.name === 'AbortError' ? 'Koneksi ke GAS timeout (12s)' : (err.message || 'Gagal terhubung ke GAS'),
+      message: isTimeout
+        ? `Waktu koneksi ke server GAS habis (${Math.round(timeoutMs / 1000)}s - Cold Start)`
+        : (err?.message || 'Gagal terhubung ke GAS'),
     };
   }
 }
@@ -322,6 +326,49 @@ export async function callGasApi<T = any>(
           accounts.push({ user: u, passwordHash: pass });
         }
         localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(accounts));
+      } catch {}
+    }
+
+    // Sinkronisasi data LKH ke penyimpanan lokal untuk respon instan dan keandalan offline
+    if (action === 'getLkhData' && data && (data as any).success && Array.isArray((data as any).records)) {
+      try {
+        localStorage.setItem('ajar_lkh_records', JSON.stringify((data as any).records));
+      } catch {}
+    }
+
+    if (action === 'saveLkhRecord' && data && (data as any).success) {
+      try {
+        const record = args[1] || {};
+        const local = localStorage.getItem('ajar_lkh_records');
+        const records: LkhRecord[] = local ? JSON.parse(local) : [];
+        const targetId = record.LkhID || record.lkhId;
+        if (targetId) {
+          const idx = records.findIndex(r => r.LkhID === targetId || r.lkhId === targetId);
+          if (idx !== -1) {
+            records[idx] = { ...records[idx], ...record };
+          } else {
+            records.unshift(record);
+          }
+        } else {
+          records.unshift({
+            LkhID: 'LKH-' + Date.now().toString(36).toUpperCase(),
+            ...record,
+            CreatedAt: new Date().toISOString(),
+          });
+        }
+        localStorage.setItem('ajar_lkh_records', JSON.stringify(records));
+      } catch {}
+    }
+
+    if (action === 'deleteLkhRecord' && data && (data as any).success) {
+      try {
+        const lkhId = args[1];
+        const local = localStorage.getItem('ajar_lkh_records');
+        if (local) {
+          const records: LkhRecord[] = JSON.parse(local);
+          const filtered = records.filter(r => r.LkhID !== lkhId && r.lkhId !== lkhId);
+          localStorage.setItem('ajar_lkh_records', JSON.stringify(filtered));
+        }
       } catch {}
     }
 
@@ -751,11 +798,33 @@ function handleLocalFallback<T>(action: string, args: any[]): T {
   }
 
   if (action === 'getNilaiData') {
-    const [, kelas] = args;
-    const siswaRes = handleLocalFallback<{ success: boolean; siswa: SiswaItem[] }>('getMasterSiswa', ['', kelas || 'XI-IPA 1']);
-    const siswa = siswaRes.siswa || [];
-    const aktivitasMap: Record<string, Record<string, number | null>> = {};
-    const pasMap: Record<string, number | null> = {};
+    const [, kelas, mapelId, semester, guruNip] = args;
+    const siswaRes = handleLocalFallback<{ success: boolean; data?: SiswaItem[]; siswa?: SiswaItem[] }>('getMasterSiswa', ['', kelas || 'XI.1']);
+    const siswa = siswaRes.data || siswaRes.siswa || [];
+    let aktivitasMap: Record<string, Record<string, number | null>> = {};
+    let pasMap: Record<string, number | null> = {};
+
+    const nipSuffix = guruNip ? `_${guruNip}` : '';
+    const cacheKey = `ajar_nilai_${kelas || ''}_${mapelId || ''}_${semester || 'Ganjil'}${nipSuffix}`;
+    let saved = localStorage.getItem(cacheKey);
+    if (!saved) {
+      saved = localStorage.getItem(`ajar_nilai_${kelas || ''}_${mapelId || ''}_${semester || 'Ganjil'}`);
+    }
+
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return {
+          success: true,
+          siswa,
+          aktivitasMap: parsed.aktivitasMap || {},
+          pasMap: parsed.pasMap || {},
+          kkm: 75,
+          bobotAct: 66,
+          bobotPas: 34,
+        } as unknown as T;
+      } catch {}
+    }
 
     siswa.forEach((s, idx) => {
       const id = s.SiswaID || s.siswaId || '';
@@ -779,6 +848,35 @@ function handleLocalFallback<T>(action: string, args: any[]): T {
   }
 
   if (action === 'saveNilaiData') {
+    const payload = args[1] || {};
+    const nipSuffix = payload.guruNip ? `_${payload.guruNip}` : '';
+    const cacheKey = `ajar_nilai_${payload.kelas || ''}_${payload.mapelId || ''}_${payload.semester || 'Ganjil'}${nipSuffix}`;
+    let existingData = {
+      aktivitasMap: {} as Record<string, Record<string, number | null>>,
+      pasMap: {} as Record<string, number | null>,
+    };
+    const saved = localStorage.getItem(cacheKey);
+    if (saved) {
+      try {
+        existingData = JSON.parse(saved);
+      } catch {}
+    }
+
+    const target = payload.target || 'act_1';
+    const scores = payload.scores || {};
+
+    if (target === 'pas') {
+      Object.entries(scores).forEach(([sId, val]) => {
+        existingData.pasMap[sId] = val !== '' && val !== null ? Number(val) : null;
+      });
+    } else {
+      Object.entries(scores).forEach(([sId, val]) => {
+        if (!existingData.aktivitasMap[sId]) existingData.aktivitasMap[sId] = {};
+        existingData.aktivitasMap[sId][target] = val !== '' && val !== null ? Number(val) : null;
+      });
+    }
+
+    localStorage.setItem(cacheKey, JSON.stringify(existingData));
     return { success: true, message: 'Nilai peserta didik berhasil disimpan!' } as unknown as T;
   }
 
@@ -836,10 +934,13 @@ function handleLocalFallback<T>(action: string, args: any[]): T {
     const record = args[1] || {};
     const res = handleLocalFallback<{ success: boolean; records: LkhRecord[] }>('getLkhData', []);
     const records = res.records || [];
-    if (record.lkhId) {
-      const idx = records.findIndex(r => r.LkhID === record.lkhId);
+    const targetId = record.LkhID || record.lkhId;
+    if (targetId) {
+      const idx = records.findIndex(r => r.LkhID === targetId || r.lkhId === targetId);
       if (idx !== -1) {
         records[idx] = { ...records[idx], ...record };
+      } else {
+        records.unshift(record);
       }
     } else {
       records.unshift({

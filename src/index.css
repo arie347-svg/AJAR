@@ -36,8 +36,8 @@ html, body {
   padding: 0;
   overflow: hidden;
   overscroll-behavior-y: none;
-  background: linear-gradient(135deg, #007685 0%, #008b94 35%, #009aa6 70%, #007d8a 100%);
-  color: #FFFFFF;
+  background-color: var(--neu-bg, #EEF2F6);
+  color: #0D162B;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

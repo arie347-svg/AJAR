@@ -30,15 +30,23 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Health-check & status koneksi sistem Google Apps Script
 const handleGasStatus = async (req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   const startTime = Date.now();
   const maskedUrl =
     gasUrl.length > 35
       ? `${gasUrl.substring(0, 38)}...${gasUrl.substring(gasUrl.length - 8)}`
       : gasUrl;
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 24000);
+
   try {
     const pingUrl = gasUrl.includes('?') ? `${gasUrl}&action=ping` : `${gasUrl}?action=ping`;
-    const pingRes = await fetch(pingUrl, { redirect: 'follow' });
+    const pingRes = await fetch(pingUrl, {
+      redirect: 'follow',
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
     const latencyMs = Date.now() - startTime;
     const isOk = pingRes.status >= 200 && pingRes.status < 400;
 
@@ -54,13 +62,17 @@ const handleGasStatus = async (req: Request, res: Response) => {
         : `Respon GAS kode status: ${pingRes.status}`,
     });
   } catch (err: any) {
+    clearTimeout(timeoutId);
+    const isTimeout = err?.name === 'AbortError';
     res.status(503).json({
       success: false,
       connected: false,
       source: gasUrlSource,
       maskedUrl,
       latencyMs: Date.now() - startTime,
-      message: 'Gagal terhubung ke GAS: ' + (err?.message || 'Network error'),
+      message: isTimeout
+        ? 'Waktu tunggu koneksi ke GAS habis saat cold-start (24s)'
+        : 'Gagal terhubung ke GAS: ' + (err?.message || 'Network error'),
     });
   }
 };
