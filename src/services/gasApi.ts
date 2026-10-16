@@ -469,27 +469,70 @@ function handleLocalFallback<T>(action: string, args: any[]): T {
 
   if (action === 'getMasterAjarData') {
     let currentUserId = '';
+    let currentUserNip = '';
+    let currentUserUname = '';
     try {
       const savedUserStr = localStorage.getItem('user');
       if (savedUserStr) {
         const u = JSON.parse(savedUserStr);
-        currentUserId = u.userId || u.username || '';
+        currentUserId = u.userId || '';
+        currentUserNip = u.nip || '';
+        currentUserUname = u.username || '';
       }
     } catch {}
 
-    const storageKey = currentUserId ? `ajar_master_ajar_${currentUserId}` : 'ajar_master_ajar';
-    const local = localStorage.getItem(storageKey);
+    const keysToTry = [
+      currentUserId ? `ajar_master_ajar_${currentUserId}` : null,
+      currentUserNip ? `ajar_master_ajar_${currentUserNip}` : null,
+      currentUserUname ? `ajar_master_ajar_${currentUserUname}` : null,
+      'ajar_master_ajar',
+    ].filter(Boolean) as string[];
+
+    let local: string | null = null;
+    for (const k of keysToTry) {
+      local = localStorage.getItem(k);
+      if (local) break;
+    }
+
     if (local) {
       const parsed = JSON.parse(local);
+      let derivedPengajaran = parsed.pengajaran || [];
+      if (derivedPengajaran.length === 0 && parsed.mapelUtama && parsed.mapelUtama.kelases?.length) {
+        derivedPengajaran = parsed.mapelUtama.kelases.map((k: string) => ({
+          mapelId: parsed.mapelUtama.mapelId,
+          mapelNama: parsed.mapelUtama.mapelNama,
+          kelas: k,
+          isUtama: true,
+        }));
+        if (parsed.mapelTambahan && Array.isArray(parsed.mapelTambahan)) {
+          parsed.mapelTambahan.forEach((t: any) => {
+            if (t.kelases && Array.isArray(t.kelases)) {
+              t.kelases.forEach((k: string) => {
+                derivedPengajaran.push({
+                  mapelId: t.mapelId,
+                  mapelNama: t.mapelNama,
+                  kelas: k,
+                  isUtama: false,
+                });
+              });
+            }
+          });
+        }
+      }
       return {
         ...parsed,
+        pengajaran: derivedPengajaran,
         listKelas: parsed.listKelas && parsed.listKelas.length > 0 ? parsed.listKelas : getCachedReferences().Kelas,
         listMapel: parsed.listMapel && parsed.listMapel.length > 0 ? parsed.listMapel : getCachedReferences().MataPelajaran,
       } as T;
     }
 
     // Jika pengguna adalah akun demo Ahmad Fauzi, sediakan konfigurasi awal demo
-    if (currentUserId === 'USR-MAN1-DEMO' || currentUserId === '198405122009121003') {
+    if (
+      currentUserId === 'USR-MAN1-DEMO' ||
+      currentUserNip === '198405122009121003' ||
+      currentUserUname === '198405122009121003'
+    ) {
       const demoData: MasterAjarData = {
         success: true,
         waliKelas: 'XI.6',
@@ -532,11 +575,13 @@ function handleLocalFallback<T>(action: string, args: any[]): T {
   if (action === 'saveMasterAjar') {
     const [, waliKelas, payloadPengajaran, mapelUtamaId] = args;
     let currentUserId = '';
+    let currentUserNip = '';
     try {
       const savedUserStr = localStorage.getItem('user');
       if (savedUserStr) {
         const u = JSON.parse(savedUserStr);
         currentUserId = u.userId || u.username || '';
+        currentUserNip = u.nip || '';
       }
     } catch {}
 
@@ -547,12 +592,49 @@ function handleLocalFallback<T>(action: string, args: any[]): T {
       current.mapelUtama = payloadPengajaran.mapelUtama || null;
       current.mapelTambahan = payloadPengajaran.mapelTambahan || [];
       current.mapelUtamaId = mapelUtamaId || (payloadPengajaran.mapelUtama?.mapelId ?? '');
+      
+      const newPengajaran: any[] = [];
+      if (current.mapelUtama && current.mapelUtama.kelases) {
+        current.mapelUtama.kelases.forEach((k: string) => {
+          newPengajaran.push({
+            mapelId: current.mapelUtama?.mapelId || '',
+            mapelNama: current.mapelUtama?.mapelNama || '',
+            kelas: k,
+            isUtama: true,
+          });
+        });
+      }
+      if (current.mapelTambahan && Array.isArray(current.mapelTambahan)) {
+        current.mapelTambahan.forEach((t: any) => {
+          if (t.kelases && Array.isArray(t.kelases)) {
+            t.kelases.forEach((k: string) => {
+              newPengajaran.push({
+                mapelId: t.mapelId,
+                mapelNama: t.mapelNama,
+                kelas: k,
+                isUtama: false,
+              });
+            });
+          }
+        });
+      }
+      current.pengajaran = newPengajaran;
     }
-    localStorage.setItem(storageKey, JSON.stringify(current));
+
+    const payloadJson = JSON.stringify(current);
+    localStorage.setItem(storageKey, payloadJson);
+    if (currentUserNip && currentUserNip !== currentUserId) {
+      localStorage.setItem(`ajar_master_ajar_${currentUserNip}`, payloadJson);
+    }
+    const ta = current.tahunAjaran || '2026/2027';
     if (currentUserId) {
-      const ta = current.tahunAjaran || '2026/2027';
       localStorage.setItem(`master_ajar_configured_${currentUserId}_${ta}`, 'true');
     }
+    if (currentUserNip) {
+      localStorage.setItem(`master_ajar_configured_${currentUserNip}_${ta}`, 'true');
+    }
+    localStorage.setItem(`master_ajar_configured_${ta}`, 'true');
+
     return { success: true, message: 'Master Ajar berhasil disimpan!' } as unknown as T;
   }
 

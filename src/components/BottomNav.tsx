@@ -45,10 +45,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({
               onClick={() => onNavigate(item.id)}
               className={`relative flex flex-col items-center justify-center py-1.5 px-2.5 rounded-xl transition-all duration-150 cursor-pointer active:scale-95 ${
                 isActive
-                  ? 'neu-pressed bg-[#E2ECF9] border border-blue-200/70 text-[#2167F3] shadow-inner font-black'
+                  ? 'neu-pressed bg-[#E2ECF9] border border-blue-200/70 text-[#2167F3] shadow-inner font-medium'
                   : isItemLocked
                   ? 'text-slate-400 opacity-60 hover:opacity-80'
-                  : 'text-slate-500 hover:text-slate-800 font-bold hover:bg-white/40'
+                  : 'text-slate-500 hover:text-slate-800 font-normal hover:bg-white/40'
               }`}
             >
               <div className="relative">
@@ -66,8 +66,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                 )}
               </div>
               <span
-                className={`text-[10px] mt-0.5 tracking-tight ${
-                  isActive ? 'text-[#0D162B] font-black' : 'text-slate-600 font-semibold'
+                className={`text-[11px] mt-0.5 tracking-tight ${
+                  isActive ? 'text-[#0D162B] font-medium' : 'text-slate-600 font-normal'
                 }`}
               >
                 {item.label}

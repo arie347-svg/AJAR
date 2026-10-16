@@ -195,13 +195,39 @@ export function App() {
       const res = await callGasApi('getMasterAjarData', [token]);
       if (res && res.success) {
         const cached = getCachedReferences();
+        // Rekonstruksi pengajaran jika kosong tetapi mapelUtama ada
+        let derivedPengajaran = res.pengajaran || [];
+        if (derivedPengajaran.length === 0 && res.mapelUtama && res.mapelUtama.kelases?.length) {
+          derivedPengajaran = res.mapelUtama.kelases.map((k: string) => ({
+            mapelId: res.mapelUtama.mapelId,
+            mapelNama: res.mapelUtama.mapelNama,
+            kelas: k,
+            isUtama: true,
+          }));
+          if (res.mapelTambahan && Array.isArray(res.mapelTambahan)) {
+            res.mapelTambahan.forEach((t: any) => {
+              if (t.kelases && Array.isArray(t.kelases)) {
+                t.kelases.forEach((k: string) => {
+                  derivedPengajaran.push({
+                    mapelId: t.mapelId,
+                    mapelNama: t.mapelNama,
+                    kelas: k,
+                    isUtama: false,
+                  });
+                });
+              }
+            });
+          }
+        }
+
         const merged: MasterAjarData = {
           ...res,
+          pengajaran: derivedPengajaran,
           listKelas: res.listKelas && res.listKelas.length > 0 ? res.listKelas : cached.Kelas,
           listMapel: res.listMapel && res.listMapel.length > 0 ? res.listMapel : cached.MataPelajaran,
         };
         setMasterAjarData(merged);
-        setPengajaranList(merged.pengajaran || []);
+        setPengajaranList(derivedPengajaran);
       }
     } catch {}
   };
@@ -212,28 +238,32 @@ export function App() {
     if (!masterAjarData || !masterAjarData.success) return true;
 
     const currentTa = masterAjarData.tahunAjaran || '2026/2027';
+    // Periksa flag konfigurasi dari berbagai identitas akun (userId, NIP, username)
     const isTaFlagged =
-      localStorage.getItem(`master_ajar_configured_${currentUser.userId}_${currentTa}`) === 'true';
+      localStorage.getItem(`master_ajar_configured_${currentUser.userId}_${currentTa}`) === 'true' ||
+      localStorage.getItem(`master_ajar_configured_${currentUser.nip}_${currentTa}`) === 'true' ||
+      localStorage.getItem(`master_ajar_configured_${currentUser.username}_${currentTa}`) === 'true' ||
+      localStorage.getItem(`master_ajar_configured_${currentTa}`) === 'true';
 
-    // Memiliki mapel utama dan minimal 1 kelas
-    const hasMapelUtama = Boolean(
-      (masterAjarData.mapelUtamaId || masterAjarData.mapelUtama?.mapelId) &&
-      (masterAjarData.mapelUtama?.kelases?.length || 0) > 0
+    // Memiliki penugasan mengajar:
+    // 1. Dari array pengajaran (data resmi dari spreadsheet / server GAS)
+    // 2. Atau dari mapelUtama dengan kelas yang dipilih
+    const hasPengajaran = Boolean(
+      (masterAjarData.pengajaran && masterAjarData.pengajaran.length > 0) ||
+      ((masterAjarData.mapelUtamaId || masterAjarData.mapelUtama?.mapelId) &&
+        (masterAjarData.mapelUtama?.kelases?.length || 0) > 0)
     );
 
-    // Memiliki penugasan wali kelas
-    const hasWaliKelas = Boolean(
-      masterAjarData.waliKelas && masterAjarData.waliKelas.trim().length > 0
-    );
-
-    if (hasMapelUtama && hasWaliKelas) {
+    // Guru yang sudah memiliki data mengajar atau sudah dikonfigurasi dianggap LENGKAP.
+    // Tugas Wali Kelas opsional karena mayoritas guru berstatus 'Bukan Wali Kelas'.
+    if (hasPengajaran || isTaFlagged) {
       return true;
     }
 
-    return isTaFlagged;
+    return false;
   }, [currentUser, masterAjarData]);
 
-  // Arahkan langsung ke Master Ajar jika guru belum melengkapi konfigurasi
+  // Arahkan ke Master Ajar HANYA jika data telah selesai dimuat dan terbukti belum memiliki konfigurasi
   useEffect(() => {
     if (currentUser && masterAjarData && masterAjarData.success) {
       if (!isMasterAjarComplete && activePage !== 'master-ajar') {
@@ -249,7 +279,7 @@ export function App() {
   const handleNavigate = (page: PageId) => {
     if (!isMasterAjarComplete && page !== 'master-ajar') {
       showToast(
-        'Lengkapi konfigurasi Master Ajar (Mapel Utama, Tambahan, & Wali Kelas) terlebih dahulu!',
+        'Lengkapi konfigurasi Master Ajar (Mata Pelajaran & Kelas) terlebih dahulu!',
         'warning'
       );
       return;
@@ -381,8 +411,10 @@ export function App() {
                   ? 'flex-1 h-full min-h-0 overflow-hidden p-2.5 sm:p-4 max-w-5xl w-full mx-auto flex flex-col'
                   : activePage === 'profil'
                   ? 'flex-1 h-full min-h-0 overflow-y-auto no-scrollbar p-3 sm:p-4 max-w-lg w-full mx-auto flex flex-col'
-                  : activePage === 'master-siswa' || activePage === 'absensi'
+                  : activePage === 'master-siswa'
                   ? 'flex-1 h-full min-h-0 overflow-hidden p-3 sm:p-4 max-w-xl w-full mx-auto flex flex-col'
+                  : activePage === 'absensi'
+                  ? 'flex-1 h-full min-h-0 overflow-hidden px-3 pt-2 pb-16 md:pb-3 sm:px-4 max-w-xl w-full mx-auto flex flex-col'
                   : 'flex-1 overflow-y-auto overscroll-contain touch-scroll p-3.5 sm:p-5 max-w-4xl w-full mx-auto'
               }
             >
@@ -419,6 +451,7 @@ export function App() {
                   pengajaranList={pengajaranList}
                   currentUser={currentUser}
                   showToast={showToast}
+                  onNavigate={handleNavigate}
                 />
               )}
 

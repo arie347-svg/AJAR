@@ -44,7 +44,7 @@ export const Topbar: React.FC<TopbarProps> = ({ activePage, onNavigate, onLogout
           {!isDashboard && !isMasterAjar && !isProfil && !isMasterSiswa && !isAbsensi && (
             <button
               onClick={() => onNavigate('dashboard')}
-              className="flex items-center justify-center p-2 rounded-xl bg-white/15 hover:bg-white/25 active:bg-white/30 text-white font-bold text-xs active:scale-95 transition-all shadow-xs backdrop-blur-md cursor-pointer shrink-0"
+              className="flex items-center justify-center p-2 rounded-xl bg-white/15 hover:bg-white/25 active:bg-white/30 text-white font-medium text-xs active:scale-95 transition-all shadow-xs backdrop-blur-md cursor-pointer shrink-0"
               title="Kembali ke Beranda"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -53,55 +53,55 @@ export const Topbar: React.FC<TopbarProps> = ({ activePage, onNavigate, onLogout
 
           {isDashboard ? (
             <div className="min-w-0">
-              <h1 className="text-lg sm:text-xl font-black text-[#0D162B] tracking-tight leading-none">
+              <h1 className="text-base sm:text-lg font-semibold text-[#0D162B] tracking-tight leading-none">
                 AJAR
               </h1>
-              <p className="text-[10px] sm:text-[11px] font-semibold text-slate-500 tracking-tight mt-0.5 truncate">
+              <p className="text-[11px] font-normal text-slate-500 tracking-tight mt-0.5 truncate">
                 Administrasi &amp; Jurnal Aktivitas Mengajar
               </p>
             </div>
           ) : isMasterAjar ? (
             <div className="min-w-0">
-              <h1 className="text-lg sm:text-xl font-black text-[#0D162B] tracking-tight leading-none">
+              <h1 className="text-base sm:text-lg font-semibold text-[#0D162B] tracking-tight leading-none">
                 Master ajar
               </h1>
-              <p className="text-[10px] sm:text-[11px] font-semibold text-slate-500 tracking-tight mt-0.5 truncate">
+              <p className="text-[11px] font-normal text-slate-500 tracking-tight mt-0.5 truncate">
                 MAN 1 Majalengka
               </p>
             </div>
           ) : isProfil ? (
             <div className="min-w-0">
-              <h1 className="text-lg sm:text-xl font-black text-[#0D162B] tracking-tight leading-none">
+              <h1 className="text-base sm:text-lg font-semibold text-[#0D162B] tracking-tight leading-none">
                 Profil Guru
               </h1>
-              <p className="text-[10px] sm:text-[11px] font-semibold text-slate-500 tracking-tight mt-0.5 truncate">
+              <p className="text-[11px] font-normal text-slate-500 tracking-tight mt-0.5 truncate">
                 MAN 1 Majalengka
               </p>
             </div>
           ) : isMasterSiswa ? (
             <div className="min-w-0">
-              <h1 className="text-lg sm:text-xl font-black text-[#0D162B] tracking-tight leading-none">
+              <h1 className="text-base sm:text-lg font-semibold text-[#0D162B] tracking-tight leading-none">
                 Data Siswa
               </h1>
-              <p className="text-[10px] sm:text-[11px] font-semibold text-slate-500 tracking-tight mt-0.5 truncate">
+              <p className="text-[11px] font-normal text-slate-500 tracking-tight mt-0.5 truncate">
                 MAN 1 Majalengka
               </p>
             </div>
           ) : isAbsensi ? (
             <div className="min-w-0">
-              <h1 className="text-lg sm:text-xl font-black text-[#0D162B] tracking-tight leading-none">
+              <h1 className="text-base sm:text-lg font-semibold text-[#0D162B] tracking-tight leading-none">
                 Presensi Siswa
               </h1>
-              <p className="text-[10px] sm:text-[11px] font-semibold text-slate-500 tracking-tight mt-0.5 truncate">
+              <p className="text-[11px] font-normal text-slate-500 tracking-tight mt-0.5 truncate">
                 MAN 1 Majalengka
               </p>
             </div>
           ) : (
             <div>
-              <h1 className="text-base font-extrabold text-white leading-tight">
+              <h1 className="text-base font-semibold text-white leading-tight">
                 {titleMap[activePage] || 'Dashboard'}
               </h1>
-              <p className="text-[10px] font-bold text-[#fde047] uppercase tracking-wider">
+              <p className="text-[11px] font-medium text-[#fde047] uppercase tracking-wider">
                 MAN 1 Majalengka
               </p>
             </div>
@@ -117,7 +117,7 @@ export const Topbar: React.FC<TopbarProps> = ({ activePage, onNavigate, onLogout
                   ? `Terhubung ke Google Apps Script (${gasConnection.source}) • Latency: ${gasConnection.latencyMs || 0}ms`
                   : `GAS Offline / Mode Lokal (${gasConnection?.message || 'Tidak terjangkau'})`
               }
-              className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold transition-all select-none ${
+              className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono tabular-nums font-medium transition-all select-none ${
                 isSoftTheme
                   ? gasConnection?.connected
                     ? 'neu-input-pill text-emerald-700'
@@ -147,7 +147,7 @@ export const Topbar: React.FC<TopbarProps> = ({ activePage, onNavigate, onLogout
 
           <button
             onClick={() => setShowLogoutModal(true)}
-            className={`px-3.5 py-1.5 rounded-xl font-extrabold text-xs tracking-wide transition-all active:scale-95 cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-xl font-medium text-xs tracking-wide transition-all active:scale-95 cursor-pointer ${
               isSoftTheme
                 ? 'neu-flat active:neu-pressed text-rose-600 hover:text-rose-700 border border-white/80'
                 : 'bg-rose-500/25 hover:bg-rose-500/35 text-rose-200 border border-rose-400/20'
@@ -173,17 +173,17 @@ export const Topbar: React.FC<TopbarProps> = ({ activePage, onNavigate, onLogout
             <div className="w-12 h-12 mx-auto rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center mb-3 shadow-inner">
               <LogOut className="w-6 h-6 stroke-[2.5]" />
             </div>
-            <h3 className="text-base font-extrabold text-[#0D162B]">
+            <h3 className="text-sm font-semibold text-[#0D162B]">
               Konfirmasi Keluar
             </h3>
-            <p className="text-xs text-slate-500 mt-1 mb-5 font-medium leading-relaxed">
+            <p className="text-xs text-slate-500 mt-1 mb-5 font-normal leading-relaxed">
               Apakah Anda yakin ingin keluar dari aplikasi AJAR?
             </p>
             <div className="grid grid-cols-2 gap-2.5">
               <button
                 type="button"
                 onClick={() => setShowLogoutModal(false)}
-                className="w-full py-2.5 rounded-xl neu-flat active:neu-pressed text-slate-700 font-bold text-xs cursor-pointer transition-all active:scale-95"
+                className="w-full py-2.5 rounded-xl neu-flat active:neu-pressed text-slate-700 font-medium text-xs cursor-pointer transition-all active:scale-95"
               >
                 Batal
               </button>
@@ -193,7 +193,7 @@ export const Topbar: React.FC<TopbarProps> = ({ activePage, onNavigate, onLogout
                   setShowLogoutModal(false);
                   onLogout();
                 }}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-rose-600 active:scale-95 text-white font-bold text-xs shadow-md shadow-rose-500/30 cursor-pointer transition-all"
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-rose-600 active:scale-95 text-white font-medium text-xs shadow-md shadow-rose-500/30 cursor-pointer transition-all"
               >
                 Keluar
               </button>

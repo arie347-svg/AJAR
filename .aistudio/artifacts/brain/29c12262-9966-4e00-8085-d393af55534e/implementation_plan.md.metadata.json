@@ -1,6 +1,6 @@
 {
-  "summary": "Rencana Implementasi Alur Kerja Presensi Siswa:\n1. Alur pemilihan pertemuan: Pertama kali masuk halaman presensi rombel, sistem mewajibkan guru memilih nomor pertemuan terlebih dahulu ('-- Pilih Pertemuan --'). Tanggal presensi dan tabel daftar siswa hanya akan muncul setelah pertemuan dipilih.\n2. Tampilan status Submitted: Jika pertemuan yang dipilih sudah pernah disimpan, sistem langsung menampilkan status 'Submitted' dengan opsi tombol Edit untuk membuka kunci koreksi data.\n3. Penanda visual status pertemuan pada dropdown: Memberikan penanda visual (✓ Tersimpan) pada opsi pertemuan yang sudah diisi.\n4. Isolasi data presensi multi-guru & multi-mapel: Menggunakan komposit key ketat (Kelas + MapelID + Semester + Tahun Ajaran + NIP Guru) baik di client, local cache, maupun payload backend GAS sehingga data guru mapel A tidak akan pernah tertukar atau menimpa guru mapel B di kelas yang sama.",
-  "updatedAt": "2026-10-16T10:31:47.337308643Z",
+  "summary": "Rencana implementasi perbaikan presensi: penanganan kelas kosong dengan indikator ringkas dan validasi upload data siswa, perbaikan sorting urutan kelas numerik (XI.10 di bawah XI.9), penyederhanaan label list pertemuan ('Pertemuan 1' tanpa '#'), serta integrasi multi-layer fetch data siswa presensi agar data siswa di spreadsheet muncul secara andal.",
+  "updatedAt": "2026-10-16T14:26:03.051550539Z",
   "requestFeedback": true,
   "userFacing": true
 }

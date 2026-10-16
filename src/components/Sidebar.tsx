@@ -47,8 +47,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <AjarBrandLogo idPrefix="sidebar" className="w-8 h-8" />
           </div>
           <div className="min-w-0">
-            <h2 className="text-base font-black tracking-wider text-[#0D162B] leading-none">AJAR</h2>
-            <p className="text-[10px] font-extrabold text-blue-700 uppercase tracking-wider mt-1 truncate">
+            <h2 className="text-base font-semibold tracking-wider text-[#0D162B] leading-none">AJAR</h2>
+            <p className="text-[11px] font-medium text-blue-700 uppercase tracking-wider mt-1 truncate">
               MAN 1 Majalengka
             </p>
           </div>
@@ -67,10 +67,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 disabled={isItemLocked}
                 className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs transition-all cursor-pointer ${
                   isActive
-                    ? 'neu-inset bg-[#E4ECF6] text-[#0D162B] font-black border border-blue-300/40 shadow-inner'
+                    ? 'neu-inset bg-[#E4ECF6] text-[#0D162B] font-medium border border-blue-300/40 shadow-inner'
                     : isItemLocked
-                    ? 'text-slate-400 opacity-60 cursor-not-allowed bg-transparent'
-                    : 'neu-flat bg-[#EEF2F6] hover:bg-[#F3F7FC] text-slate-600 hover:text-[#0D162B] font-bold border border-white/80 active:scale-[0.99]'
+                    ? 'text-slate-400 opacity-60 cursor-not-allowed bg-transparent font-normal'
+                    : 'neu-flat bg-[#EEF2F6] hover:bg-[#F3F7FC] text-slate-600 hover:text-[#0D162B] font-normal border border-white/80 active:scale-[0.99]'
                 }`}
               >
                 <div className="flex items-center space-x-3 min-w-0">
@@ -89,7 +89,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <div className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0 shadow-xs" />
                 )}
                 {isItemLocked && (
-                  <span className="text-[10px] font-mono text-slate-400 neu-inset px-2 py-0.5 rounded-lg bg-[#E8EEF6]">
+                  <span className="text-[11px] font-mono tabular-nums text-slate-400 neu-inset px-2 py-0.5 rounded-lg bg-[#E8EEF6]">
                     Terkunci
                   </span>
                 )}
@@ -118,10 +118,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-black text-[#0D162B] truncate">
+            <p className="text-xs font-semibold text-[#0D162B] truncate">
               {currentUser?.namaTampilan || currentUser?.namaLengkap || 'Guru'}
             </p>
-            <p className="text-[10px] text-slate-500 font-mono font-bold truncate">
+            <p className="text-[11px] text-slate-500 font-mono tabular-nums font-normal truncate">
               NIP. {currentUser?.nip || '-'}
             </p>
           </div>
@@ -129,7 +129,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <button
           onClick={onLogout}
-          className="w-full flex items-center justify-center space-x-2 py-2.5 rounded-xl neu-btn bg-[#EEF2F6] hover:bg-rose-50 text-rose-600 hover:text-rose-700 text-xs font-bold active:scale-95 transition-all border border-rose-200/50 cursor-pointer shadow-xs"
+          className="w-full flex items-center justify-center space-x-2 py-2.5 rounded-xl neu-btn bg-[#EEF2F6] hover:bg-rose-50 text-rose-600 hover:text-rose-700 text-xs font-medium active:scale-95 transition-all border border-rose-200/50 cursor-pointer shadow-xs"
         >
           <LogOut className="w-4 h-4 stroke-[2.2]" />
           <span>Keluar</span>

@@ -1,146 +1,116 @@
-# Rencana Implementasi: Alur Presensi Siswa Dinamis, Status Submitted & Isolasi Data Multi-Guru
+# Perbaikan Presensi: Pengurutan Kelas, Validasi Siswa Kosong, Label Pertemuan & Pemuatan Siswa
 
-Dokumen ini merinci rencana arsitektur dan pembaruan antarmuka pada fitur **Presensi Siswa** (`Absensi.tsx`) sesuai kebutuhan alur kerja guru di madrasah:
-1. **Alur Pemilihan Pertemuan:** Tampilan awal mewajibkan guru memilih pertemuan terlebih dahulu. Kolom tanggal dan daftar siswa hanya akan muncul setelah pertemuan dipilih secara eksplisit.
-2. **Status Submitted:** Jika pertemuan yang dipilih sudah pernah diisi dan disimpan, antarmuka otomatis menampilkan status *Submitted* dengan tombol Edit untuk membuka kunci jika guru memerlukan koreksi.
-3. **Penanda Visual Dropdown Pertemuan:** Daftar dropdown pertemuan (1–31) menampilkan penanda visual jelas (`✓ Tersimpan` vs belum diisi).
-4. **Isolasi Data Multi-Guru & Multi-Mata Pelajaran:** Menjamin data presensi kelas tidak tertukar antar-guru yang mengajar mata pelajaran berbeda di rombel yang sama melalui penguncian komposit (*composite key*).
+Rencana implementasi ini dirancang untuk menyempurnakan fitur Presensi di aplikasi AJAR MAN 1 Majalengka: menghadirkan indikator taktil bagi kelas yang belum memiliki data siswa beserta dialog validasi upload data siswa, memperbaiki algoritma pengurutan kelas agar kelas bernomor besar (seperti XI.10) berada di urutan semestinya, menyederhanakan teks dropdown pertemuan menjadi "Pertemuan 1" tanpa embel-embel simbol "#", serta menyelesaikan masalah pemuatan siswa saat pertemuan dipilih dengan strategi *multi-source student resolver*.
 
 ---
 
-## User Review & Critical Decisions
+### User Review & Critical Decisions
 
 > [!IMPORTANT]
-> Keputusan alur dan interaksi berikut telah dikonfirmasi oleh pengguna:
-> - **Kebijakan Status Submitted:** Menyediakan tombol **Edit** bertema tactile Neumorphic untuk membuka kunci formulir jika guru perlu mengoreksi kehadiran siswa yang telah tersimpan.
-> - **Indikator Dropdown Pertemuan:** Memberikan penanda visual khusus (misal: `Pertemuan 1 ✓ (Tersimpan)`) pada opsi pertemuan yang telah memiliki riwayat data tersimpan agar guru dapat langsung melihat progres pertemuan yang sudah tuntas.
+> **Keputusan Teknis & UX yang Disepakati:**
+> 1. **Tindakan Validasi Saat Kelas Kosong Diklik:** Ketika guru mengklik kartu kelas yang belum memiliki siswa, sistem akan memunculkan dialog konfirmasi taktil (Modern Neumorphic Modal) yang menjelaskan bahwa kelas belum memiliki data siswa, disertai tombol aksi langsung menuju **Master Siswa** untuk mengunggah file Excel / menyinkronkan data siswa dari Google Spreadsheet.
+> 2. **Penyortiran Numerik Kelas (Natural Sorting):** Mengganti `localeCompare` standar yang berbasis abjad murni (`XI.1, XI.10, XI.2`) dengan perbandingan berbasis numerik (*natural comparison*), sehingga urutan kelas berurutan logis: `XI.1, XI.2, ..., XI.9, XI.10, XI.11`.
+> 3. **Penyederhanaan Teks Pertemuan:** Menghapus seluruh tampilan format kode `#1`, `#2` pada tombol maupun daftar dropdown. Setiap item menampilkan label bersih dan proporsional: `Pertemuan {nomor}` dipadukan dengan indikator status kehadiran (LED hijau bila sudah tersimpan).
+> 4. **Multi-Source Student Resolver untuk Presensi:** Ketika pertemuan dipilih di lembar presensi, pemanggilan tidak hanya mengandalkan satu kunci respon dari GAS, melainkan secara berlapis memeriksa `res.siswa`, `res.data`, `res.daftarSiswa`, cache terisolasi `localStorage.getItem('ajar_siswa_' + kelas)`, dan memicu sinkronisasi otomatis `getMasterSiswa` jika spreadsheet belum ter-cache.
 
 ---
 
-## 1. Overview & Core Concept
+### 1. Overview & Core Concept
 
-- **Apa yang Diperbarui**:
-  1. *Zero-Selection Initial State*: Saat guru mengeklik kartu rombel mengajar (misal: *Kelas XI.6 • Fikih*), lembar presensi terbuka dalam keadaan awal bersih. Dropdown pertemuan menampilkan placeholder `-- Pilih Pertemuan --`, kolom tanggal belum muncul, dan area data menampilkan instruksi ramah: *"Silakan pilih pertemuan terlebih dahulu untuk memuat lembar presensi."*
-  2. *Dynamic Reveal on Meeting Selection*: Begitu guru memilih pertemuan (misal: Pertemuan 1):
-     - Kolom tanggal presensi langsung dimunculkan (terisi otomatis dengan tanggal yang pernah disimpan, atau tanggal hari ini jika baru).
-     - Daftar siswa kelas tersebut untuk mata pelajaran tersebut dimuat dan dirender.
-     - Jika pertemuan tersebut sudah pernah disimpan, antarmuka menampilkan overlay/status **Submitted** (dengan tombol Edit untuk koreksi).
-     - Jika pertemuan tersebut belum pernah diisi, formulir terbuka dalam mode aktif siap diisi (default Hadir dengan opsi tombol H/I/S/A).
-  3. *Isolasi Data Absen per Mapel & Guru*:
-     - Di MAN 1 Majalengka, satu kelas (misal XI.6) diajar oleh guru Fikih, guru Sejarah Kebudayaan Islam, guru Matematika, dll.
-     - Kunci identifikasi penyimpanan presensi dirancang ketat:  
-       `{kelas}_{mapelId}_{semester}_{tahunAjaran}_{guruNip}`
-     - Menjamin presensi Fikih di XI.6 tidak akan pernah terhapus, tertimpa, atau terbaca oleh guru SKI atau guru lainnya.
+- **Apa yang Dihadirkan**:
+  1. **Indikator Siswa & Validasi Kelas Kosong**: Kartu rombel pada daftar presensi menampilkan status jumlah siswa atau badge taktil ringkas "Belum Ada Siswa" jika data siswa kelas tersebut masih kosong. Klik pada kelas kosong menampilkan modal validasi informatif dengan tombol navigasi instan ke modul Master Siswa.
+  2. **Pengurutan Kelas Natural (Numeric-Aware)**: Daftar kartu kelas terurut dari angka terkecil hingga terbesar (`XI.1` hingga `XI.10` dst.) secara konsisten di semua tingkatan (X, XI, XII).
+  3. **Label Dropdown Pertemuan Bersih**: Format penamaan pertemuan seragam `Pertemuan 1`, `Pertemuan 2`, dst., tanpa simbol pagar `#`, menjaga estetika Neumorphic yang minimalis dan teratur.
+  4. **Pemuatan Siswa Presensi yang Andal**: Lembar presensi menjamin nama siswa dari spreadsheet selalu tampil ketika pertemuan diklik, lengkap dengan status kehadiran (Hadir/Izin/Sakit/Alpa) dan tanggal pertemuan.
+- **Sasaran Pengguna**: Guru MAN 1 Majalengka yang melakukan pencatatan kehadiran harian di kelas tanpa hambatan data kosong atau kartu teracak.
 
 ---
 
-## 2. User Experience & Visual Design
+### 2. User Experience & Visual Design
 
-### A. Alur Tampilan Saat Rombel Dibuka (Pertemuan Belum Dipilih)
-```
-+----------------------------------------------------+
-|  Kelas XI.6 • Fikih                   [X Tutup]   |
-|  Semester Ganjil • T.A 2026/2027                   |
-+----------------------------------------------------+
-|  Pertemuan Ke:                                     |
-|  [ -- Pilih Pertemuan (1 - 31) --               v ]|  <- Dropdown Wajib Pilih
-+----------------------------------------------------+
-|                                                    |
-|           [ Ikon Kalender / Presensi ]             |
-|             Silakan Pilih Pertemuan                |  <- State Petunjuk Awal
-|  Pilih nomor pertemuan di atas untuk menampilkan   |
-|  tanggal presensi dan daftar kehadiran siswa.      |
-|                                                    |
-+----------------------------------------------------+
-```
+#### A. Tampilan Kartu Kelas & Indikator Siswa Kosong
+- **Wujud Kartu Kelas (`neu-raised-card`)**:
+  - Menampilkan nama kelas dan mata pelajaran dengan kontras tajam.
+  - Untuk kelas dengan data siswa: Menampilkan jumlah siswa terdaftar (misal `36 Siswa`) secara ringkas dan bersih.
+  - Untuk kelas **belum ada siswa**: Menampilkan badge peringatan taktil bernuansa amber lembut (`neu-inset bg-[#FFFBEB] text-amber-800 border-amber-300/60`) dengan ikon peringatan kecil dan label teks `"Belum Ada Siswa"`.
+- **Modal Validasi Upload Siswa (`neu-raised-card` Dialog)**:
+  - Header: Ikon peringatan taktil dengan judul *"Data Siswa Belum Tersedia"*.
+  - Deskripsi: *"Kelas [Nama Kelas] belum memiliki data siswa terdaftar di sistem. Anda perlu mengunggah atau menyinkronkan data siswa terlebih dahulu sebelum dapat mengisi presensi."*
+  - Tombol Aksi:
+    - **Unggah / Kelola Siswa**: Tombol primer beraksen biru (`neu-btn-primary`) yang langsung mengarahkan guru ke halaman **Master Siswa** dengan kelas tersebut langsung terpilih.
+    - **Tutup / Batal**: Tombol sekunder taktil cembung untuk menutup dialog.
 
-### B. Tampilan Setelah Pertemuan Dipilih (Data Muncul)
-```
-+----------------------------------------------------+
-|  Kelas XI.6 • Fikih                   [X Tutup]   |
-+----------------------------------------------------+
-|  Pertemuan Ke:            Tanggal Presensi:        |
-|  [ Pertemuan 1          v ] [ 16/10/2026         ] |  <- Tanggal Muncul Dinamis
-+----------------------------------------------------+
-|  [ Hadir Semua ]         H: 34 | I: 1 | S: 1 | A: 0|  <- Baris Kontrol Aktif
-+----------------------------------------------------+
-|  No.  Nama Siswa                     Kehadiran     |
-|  1.   Achmad Dani Ramadhan           [H] [I] [S] [A]
-|  2.   Aisyah Putri Nurhaliza         [H] [I] [S] [A]
-|  ...  ...                                          |
-+----------------------------------------------------+
-|  [       Simpan Presensi Pertemuan ke-1          ] |  <- Tombol Simpan
-+----------------------------------------------------+
-```
+#### B. Pengurutan Kelas Natural
+- Algoritma pemilahan kelas menggunakan pemisah blok numerik (*natural sort comparison*):
+  - Membandingkan tingkat (`X` < `XI` < `XII`).
+  - Membandingkan nomor rombel secara numerik: `1 < 2 < 3 ... < 9 < 10 < 11`.
+  - Hasil: `XI.10` diposisikan di bawah `XI.9`, bukan di atas `XI.2`.
 
-### C. Tampilan Jika Pertemuan Sudah Tersimpan (Submitted State)
-- Pada baris pilihan dropdown: `Pertemuan 1 ✓ (Tersimpan)`.
-- Pada area tabel siswa: Muncul kartu status Neumorphic elegan:
-  - Ikon checklist hijau `CheckCircle2`
-  - Teks: **`Submitted`** — *Pertemuan 1 telah tersimpan pada 16/10/2026*
-  - Tombol tactile: **`Edit Presensi`** untuk membuka kunci jika guru ingin mengubah kehadiran salah satu siswa.
+#### C. Dropdown Pertemuan Bersih & Minimalis
+- Item dropdown menampilkan:
+  - Teks utama: `Pertemuan {p}` (tanpa awalan `#` atau badge kotak berlebih).
+  - Tanda status: Indikator LED emerald tersimpan + label tanggal kecil untuk pertemuan yang sudah pernah diisi.
+  - Status aktif: Efek tekan mekanis (`neu-inset` dengan border aksen kobalt).
+
+#### D. Pemuatan Data Siswa Presensi Multi-Layer
+- Alur saat guru memilih nomor pertemuan:
+  1. Sistem menampilkan spinner taktil halus saat memuat data.
+  2. Memeriksa respon dari `getAbsensiData`. Jika array siswa tersedia, data dinormalisasi dan ditampilkan.
+  3. Jika `getAbsensiData` hanya mengembalikan map kehadiran (tanpa array data siswa lengkap), sistem secara otomatis mengambil daftar siswa dari cache lokal kelas tersebut (`ajar_siswa_{kelas}`).
+  4. Jika cache lokal belum ada, sistem otomatis mengeksekusi `getMasterSiswa` ke spreadsheet GAS, menormalisasi data kolom (mendukung variasi nama field dari spreadsheet: `Nama Siswa`, `NamaSiswa`, `nama`, `NISN`, `NIS`), lalu merender tabel presensi.
+  5. Kehadiran default diset `Hadir (H)` untuk siswa yang belum memiliki riwayat pada pertemuan tersebut.
 
 ---
 
-## 3. Key Product Decisions & Trade-Offs
+### 3. Key Product Decisions & Trade-Offs
 
-- **Keputusan 1: Pertemuan Dimulai dari Status Kosong (`selectedMeeting = null`)**
-  - *Pendekatan*: Tidak melakukan auto-select ke Pertemuan 1 secara otomatis saat modal pertama dibuka.
-  - *Alasan*: Mencegah guru salah memasukkan absen ke pertemuan 1 secara tidak sengaja ketika sebenarnya guru hendak mengisi pertemuan 3 atau 4.
-- **Keputusan 2: Penandaan Riwayat Pertemuan Tersimpan**
-  - *Pendekatan*: Melakukan pemindaian lokal/server terhadap pertemuan yang telah memiliki catatan tanggal atau absensi pada rombel tersebut, lalu membubuhkan label `✓ (Tersimpan)` pada opsi select.
-  - *Alasan*: Memberikan kepastian langsung kepada guru mengenai pertemuan mana saja yang sudah selesai dicatat.
-- **Keputusan 3: Komposit Key Database & Cache**
-  - *Pendekatan*: Setiap panggilan API `getAbsensiData` dan `saveAbsensiData` menyertakan `mapelId` dan `kelas` secara tegas. Cache penyimpanan lokal menggunakan prefix `ajar_absensi_${kelas}_${mapelId}_${semester}`.
-  - *Alasan*: Menjamin integritas data madrasah 100% aman dari konflik antar-guru.
+- **Keputusan 1: Mekanisme Natural Sorting di Komponen Rombel**
+  - *Pendekatan*: Menggunakan fungsi pembantu `naturalCompare(a.kelas, b.kelas)` yang memisahkan bagian teks rombel dan mem-parsing angka rombel dengan `parseInt(num, 10)`.
+  - *Alasan*: Pengurutan bawaan JavaScript `localeCompare()` tanpa opsi numerik mengurutkan berdasarkan karakter ASCII (`"10"` diawali `"1"`, sehingga berada sebelum `"2"`). Natural sorting memberikan urutan yang intuitif bagi guru.
+- **Keputusan 2: Penanganan Lembar Presensi untuk Kelas Kosong**
+  - *Pendekatan*: Memblokir pembukaan lembar presensi jika kelas benar-benar belum memiliki siswa dan menampilkan dialog validasi terarah.
+  - *Alasan*: Mencegah guru membuka formulir kosong yang tidak dapat disimpan (tombol simpan dinonaktifkan karena `siswaList.length === 0`), serta langsung memberikan solusi cepat berupa tautan ke Master Siswa.
+- **Keputusan 3: Multi-Layer Fallback Data Siswa Presensi**
+  - *Pendekatan*: `loadAbsensiData` menggabungkan metadata presensi dari `getAbsensiData` dengan data master siswa dari `getMasterSiswa` / `ajar_siswa_{kelas}`.
+  - *Alasan*: Menjamin tabel presensi tidak pernah kosong saat spreadsheet sebenarnya memiliki data siswa namun endpoint presensi GAS hanya mengirimkan matriks nilai/status tanpa menduplikasi data master siswa.
 
 ---
 
-## 4. Technical Architecture & Component Mapping
+### 4. Technical Architecture & Data Strategy
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                          App.tsx                            │
-│  - Meneruskan prop currentUser ke Absensi.tsx               │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                        Absensi.tsx                          │
-├─────────────────────────────────────────────────────────────┤
-│ 1. State:                                                   │
-│    - selectedPertemuan: number | null (default: null)       │
-│    - savedMeetingsMap: Record<number, { tanggal, isSaved }> │
-│    - isLocked: boolean (true jika pertemuan sudah saved)    │
-├─────────────────────────────────────────────────────────────┤
-│ 2. View Rendering Logic:                                    │
-│    - IF selectedPertemuan === null:                         |
-│        Render Dropdown Pertemuan + "Pilih Pertemuan State"  │
-│        (Tanggal & Tabel Siswa Tersembunyi)                  │
-│    - IF selectedPertemuan !== null:                         │
-│        Render Tanggal Input + Tabel Siswa                   │
-│        IF isSaved -> Render Status Submitted + Tombol Edit  │
-├─────────────────────────────────────────────────────────────┤
-│ 3. Data Isolation Service (gasApi.ts & Local Storage):      │
-│    - Key: ajar_absensi_${kelas}_${mapelId}_${semester}      │
-│    - Payload saveAbsensiData menyertakan:                   │
-│      mapelId, kelas, pertemuan, tanggal, semester, guruNip  │
-└─────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────┐
+│                        KOMPONEN PRESENSI (Absensi)                     │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+           ┌────────────────────────┴────────────────────────┐
+           ▼                                                 ▼
+┌───────────────────────────────┐         ┌──────────────────────────────┐
+│  Daftar Kelas (Natural Sort)  │         │  Lembar Presensi Fullscreen  │
+│  - X.1 ... X.10               │         │  - Dropdown: 'Pertemuan 1'   │
+│  - XI.1 ... XI.10             │         │  - Input Tanggal             │
+│  - XII.1 ... XII.10           │         │  - Tabel Daftar Siswa        │
+└──────────────┬────────────────┘         └──────────────┬───────────────┘
+               │                                         │
+               ├─────────────────────────────────────────┤
+               ▼                                         ▼
+┌───────────────────────────────┐         ┌──────────────────────────────┐
+│  Validasi Kelas Belum Ada     │         │  Multi-Source Siswa Resolver │
+│  Siswa: Modal Neumorphic      │         │  1. getAbsensiData (GAS)     │
+│  -> Direct ke Master Siswa    │         │  2. Cache ajar_siswa_{kelas} │
+│                               │         │  3. getMasterSiswa (GAS)     │
+└───────────────────────────────┘         └──────────────────────────────┘
 ```
 
-### Rincian Rencana Eksekusi:
-1. **`src/App.tsx`**:
-   - Teruskan `currentUser={currentUser}` ke komponen `<Absensi />`.
-2. **`src/components/Absensi.tsx`**:
-   - Ubah initial state `pertemuan` menjadi `null` saat rombel baru dibuka.
-   - Tambahkan state `savedMeetings` untuk mencatat nomor-nomor pertemuan yang sudah pernah disimpan pada rombel tersebut.
-   - Sembunyikan input tanggal dan tabel siswa sebelum pertemuan dipilih; tampilkan kartu panduan Neumorphic *"Silakan Pilih Pertemuan"*.
-   - Saat pertemuan dipilih:
-     - Tampilkan tanggal dan data siswa.
-     - Periksa apakah pertemuan tersebut sudah tersimpan; jika ya, aktifkan mode `Submitted` (terkunci dengan opsi tombol Edit).
-   - Di dropdown pertemuan: Beri penanda `✓` pada pertemuan yang sudah diisi.
-   - Pastikan isolasi data: Sertakan `mapelId`, `kelas`, `semester`, dan `currentUser.nip` pada penyimpanan dan payload GAS.
+#### Komponen dan Modifikasi File:
+1. **`src/components/Absensi.tsx`**:
+   - Menambahkan utilitas pengurutan numerik (`naturalCompare`) untuk menyusun `rombelList` dan `displayedRombels`.
+   - Mengambil jumlah siswa kelas (`classCounts`) dari cache lokal atau pre-fetch ringan.
+   - Menambahkan badge ringkas `"Belum Ada Siswa"` pada kartu kelas dengan count = 0.
+   - Menambahkan State & Modal Validasi: jika kelas dengan 0 siswa diklik, tampilkan dialog taktil untuk navigasi ke Master Siswa.
+   - Merapikan label item di `NeuMeetingSelect`: hanya menampilkan `"Pertemuan " + p` tanpa simbol `#`.
+   - Memperbaiki `loadAbsensiData` dengan fallback otomatis ke `getMasterSiswa` dan normalisasi field data siswa sehingga tabel siswa selalu terisi.
+2. **`src/App.tsx`**:
+   - Meneruskan prop `onNavigate` ke komponen `<Absensi />` agar tombol pada modal validasi dapat memindahkan tab pengguna secara mulus ke `master-siswa`.
 3. **`src/services/gasApi.ts`**:
-   - Selaraskan penanganan fallback `getAbsensiData` dan `saveAbsensiData` agar menggunakan key gabungan `kelas + mapelId + semester`.
-4. **Verifikasi Build**:
-   - Jalankan `compile_applet` dan `lint_applet` untuk menjamin tidak ada error sintaks atau regresi tipe data.
+   - Memastikan respons simulasi lokal dan proxy payload untuk `getAbsensiData` menyertakan daftar siswa dari `getMasterSiswa` jika belum disertakan.
