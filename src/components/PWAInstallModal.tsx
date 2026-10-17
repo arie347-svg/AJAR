@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check, ArrowRight, Share } from 'lucide-react';
+import { X, Check, CheckCircle2, ArrowRight, Share } from 'lucide-react';
 import { AjarBrandLogo } from './AjarBrandLogo';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -257,23 +257,18 @@ export const PWAInstallModal: React.FC = () => {
         )}
 
         {installState === 'installed' && (
-          /* Tampilan Selesai Terinstal: Tombol Beralih ke Aplikasi */
+          /* Tampilan Selesai Terinstal: Animasi Loading Berubah Menjadi Ikon Ceklis & Tulisan Terinstal Hijau */
           <>
-            <div className="relative mb-2">
-              <div className="neu-logo-tile w-18 h-18 rounded-[24px] flex items-center justify-center p-2 shadow-md">
-                <AjarBrandLogo idPrefix="pwaModalDone" className="w-10 h-10" />
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center text-white shadow-xs">
-                <Check className="w-3.5 h-3.5 stroke-[3]" />
-              </div>
+            <div className="w-14 h-14 rounded-full neu-inset bg-[#E8EEF6] border border-white/80 flex items-center justify-center p-2 mb-2 shadow-inner text-emerald-600 animate-in zoom-in-75 duration-200">
+              <CheckCircle2 className="w-8 h-8 text-emerald-500 stroke-[2.4]" />
             </div>
 
-            <div className="space-y-0.5 mb-3">
-              <h3 className="text-xs font-semibold text-[#0D162B] tracking-tight">
-                Aplikasi Terinstal
+            <div className="space-y-0.5 mb-3.5 animate-in fade-in duration-200">
+              <h3 className="text-sm font-semibold text-emerald-600 tracking-tight">
+                Terinstal
               </h3>
               <p className="text-[11px] text-[#5A6578] font-normal leading-tight">
-                AJAR 2.0 siap dibuka dari layar HP
+                Aplikasi siap dibuka langsung di HP
               </p>
             </div>
 
