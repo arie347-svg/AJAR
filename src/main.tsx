@@ -5,11 +5,16 @@ import './index.css';
 
 // Register Service Worker for PWA compliance
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(err => {
+  const registerSW = () => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(err => {
       console.debug('Service Worker info:', err);
     });
-  });
+  };
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    registerSW();
+  } else {
+    window.addEventListener('load', registerSW);
+  }
 }
 
 const rootElement = document.getElementById('root');
