@@ -328,33 +328,27 @@ export function App() {
       <Toast toasts={toasts} onDismiss={dismissToast} />
       <PWAInstallModal />
 
-      {/* Splash Screen - Diperingkas: Logo Terpusat + Tulisan Connecting... Bertema Neumorphism / Soft UI Modern */}
+      {/* Splash Screen: Background Putih, Pembungkus Icon Transparan, Icon PNG */}
       {loadingSplash && (
-        <div className="fixed inset-0 z-[9999] bg-[#EBF0F8] flex flex-col items-center justify-center p-4 transition-opacity duration-300 select-none">
-          {/* Subtle Ambient Soft Rings */}
-          <div
-            aria-hidden="true"
-            className="fixed -top-16 -left-20 w-80 h-80 rounded-full bg-gradient-to-br from-blue-300/30 via-sky-200/20 to-transparent blur-3xl pointer-events-none"
-          />
-          <div
-            aria-hidden="true"
-            className="fixed top-24 -right-16 w-80 h-80 rounded-full bg-gradient-to-l from-blue-200/40 to-transparent blur-3xl pointer-events-none"
-          />
-
+        <div className="fixed inset-0 z-[9999] bg-white flex flex-col items-center justify-center p-4 transition-opacity duration-300 select-none">
           <div className="relative z-10 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in-95 duration-200">
-            {/* 3D Neumorphic Logo Squircle persis seperti yang ada di halaman login */}
-            <div className="neu-logo-tile w-24 h-24 sm:w-28 sm:h-28 rounded-[30px] sm:rounded-[36px] flex items-center justify-center p-2.5 relative shadow-lg">
-              <AjarBrandLogo idPrefix="splash" className="w-14 h-14 sm:w-16 sm:h-16" />
+            {/* Pembungkus Icon Transparan Tanpa Kotak/Border dengan Icon PNG */}
+            <div className="w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center bg-transparent">
+              <img
+                src="/icon-512.png"
+                alt="AJAR 2.0"
+                className="w-20 h-20 sm:w-24 sm:h-24 object-contain filter drop-shadow-[0_10px_16px_rgba(33,103,243,0.22)] select-none pointer-events-none"
+              />
             </div>
 
             {/* Tulisan Connecting... dengan Soft UI Modern */}
             <div className="mt-6 flex flex-col items-center">
-              <div className="neu-input-pill px-5 py-2.5 rounded-full flex items-center gap-2.5">
+              <div className="px-5 py-2 rounded-full bg-[#F1F5F9] border border-slate-200/60 shadow-sm flex items-center gap-2.5">
                 <span className="relative flex items-center justify-center">
                   <span className="w-2.5 h-2.5 rounded-full bg-[#2167F3] animate-ping absolute opacity-75" />
                   <span className="w-2.5 h-2.5 rounded-full bg-[#2167F3]" />
                 </span>
-                <span className="text-xs sm:text-sm font-extrabold tracking-wider text-slate-700">
+                <span className="text-xs sm:text-sm font-bold tracking-wider text-slate-700">
                   Connecting...
                 </span>
               </div>
