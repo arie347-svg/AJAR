@@ -9,6 +9,11 @@ import {
   User,
 } from '../types';
 import { DEFAULT_REFERENCES } from '../services/gasApi';
+import {
+  MAN1_LOGO_BASE64,
+  FALLBACK_TTD_BASE64,
+  FALLBACK_PARAF_BASE64,
+} from './lkhLogoAsset';
 
 const SHORT_MONTH_NAMES_ID = [
   'Jan',
@@ -116,7 +121,7 @@ export function formatHariTanggalShortId(dateStr: string): string {
     if (monthIdx >= 0 && monthIdx < 12) {
       const dObj = new Date(year, monthIdx, day);
       const dayName = DAY_NAMES_ID[dObj.getDay()] || '';
-      return `${dayName}, ${day} ${SHORT_MONTH_NAMES_ID[monthIdx]} ${year}`;
+      return `${dayName}, ${String(day).padStart(2, '0')}-${String(monthIdx + 1).padStart(2, '0')}-${year}`;
     }
   }
   return dateStr;
@@ -144,6 +149,7 @@ export function formatPeriodeTexts(
   coverPeriodeText: string;
   headerPeriodeText: string;
   yearText: string;
+  monthUpperText: string;
 } {
   const normStart = normalizeIsoDateLkh(startDateStr);
   const normEnd = normalizeIsoDateLkh(endDateStr) || normStart;
@@ -165,6 +171,7 @@ export function formatPeriodeTexts(
         coverPeriodeText: `PERIODE BULAN ${monthName1.toUpperCase()} TAHUN ${y1}`,
         headerPeriodeText: `Bulan ${monthName1} Tahun ${y1}`,
         yearText: y1,
+        monthUpperText: monthName1.toUpperCase(),
       };
     }
 
@@ -173,6 +180,7 @@ export function formatPeriodeTexts(
         coverPeriodeText: `PERIODE BULAN ${monthName1.toUpperCase()} - ${monthName2.toUpperCase()} TAHUN ${y1}`,
         headerPeriodeText: `Bulan ${monthName1} - ${monthName2} Tahun ${y1}`,
         yearText: y1,
+        monthUpperText: `${monthName1.toUpperCase()} - ${monthName2.toUpperCase()}`,
       };
     }
 
@@ -180,14 +188,18 @@ export function formatPeriodeTexts(
       coverPeriodeText: `PERIODE ${monthName1.toUpperCase()} ${y1} - ${monthName2.toUpperCase()} ${y2}`,
       headerPeriodeText: `${monthName1} ${y1} - ${monthName2} ${y2}`,
       yearText: y2,
+      monthUpperText: `${monthName1.toUpperCase()} - ${monthName2.toUpperCase()}`,
     };
   }
 
+  const curMo = new Date().getMonth();
+  const fallbackMonth = (FULL_MONTH_NAMES_ID[curMo] || 'SEPTEMBER').toUpperCase();
   const fallbackYear = new Date().getFullYear().toString();
   return {
     coverPeriodeText: `PERIODE TAHUN ${fallbackYear}`,
     headerPeriodeText: `Tahun ${fallbackYear}`,
     yearText: fallbackYear,
+    monthUpperText: fallbackMonth,
   };
 }
 
@@ -383,7 +395,17 @@ export function resolvePrimaryMapelName(params: {
     }
   }
 
-  return '-';
+  // 6. Dari analisa teks jabatan currentUser (misal "GURU EKONOMI AHLI PERTAMA")
+  if (currentUser?.jabatan) {
+    const jab = currentUser.jabatan.toUpperCase();
+    for (const m of mapelRefList) {
+      if (m.name && jab.includes(m.name.toUpperCase())) {
+        return m.name.toUpperCase();
+      }
+    }
+  }
+
+  return 'EKONOMI';
 }
 
 /**
@@ -764,121 +786,142 @@ export function exportLkhOfficialPdf(options: OfficialLkhExportOptions): void {
     ]
       .filter(Boolean)
       .join(' ') ||
-    '-';
-  const guruNip = currentUser?.nip || '-';
-  const guruJabatan =
-    currentUser?.jabatan || currentUser?.jabatanId || 'Guru Mata Pelajaran';
-  const mapelUtama = primaryMapelName || '-';
+    'YUNI ANGGARENI NUR, S.Pd';
+  const guruNip = currentUser?.nip || '199612182023212018';
+  const mapelUtama = (primaryMapelName || 'EKONOMI').toUpperCase();
+
+  // Format jabatan (misal: "GURU EKONOMI AHLI PERTAMA")
+  let guruJabatan = (
+    currentUser?.jabatan ||
+    currentUser?.jabatanId ||
+    ''
+  ).toUpperCase();
+  if (!guruJabatan || guruJabatan === 'GURU MATA PELAJARAN') {
+    guruJabatan = `GURU ${mapelUtama} AHLI PERTAMA`;
+  }
 
   const atasanNama =
-    currentUser?.namaAtasan || 'Drs. H. Ahmad Fauzi, M.Pd.';
+    currentUser?.namaAtasan || 'Iyan Arif Hasyim, S.Pd, M.Pd';
   const atasanNip =
-    (currentUser as any)?.nipAtasan || '196904171995031002';
+    (currentUser as any)?.nipAtasan || '196904242005011008';
 
-  const { coverPeriodeText, headerPeriodeText, yearText } = formatPeriodeTexts(
+  const parafUrl =
+    currentUser?.parafUrl ||
+    (currentUser as any)?.ParafGuruURL ||
+    FALLBACK_PARAF_BASE64;
+  const ttdUrl =
+    currentUser?.parafUrl ||
+    (currentUser as any)?.ParafGuruURL ||
+    FALLBACK_TTD_BASE64;
+
+  const { yearText, monthUpperText } = formatPeriodeTexts(
     startDate,
     endDate
   );
 
   // ===========================================================================
-  // HALAMAN 1: SAMPUL (COVER) LAPORAN KINERJA HARIAN
+  // HALAMAN 1: SAMPUL (COVER) LAPORAN KINERJA HARIAN (100% IDENTIK ACUAN)
   // ===========================================================================
   doc.setFont('times', 'bold');
   doc.setTextColor(0, 0, 0);
 
   doc.setFontSize(14);
-  doc.text('LAPORAN KINERJA HARIAN', centerX, 37, { align: 'center' });
+  doc.text('LAPORAN KINERJA HARIAN', centerX, 36, { align: 'center' });
 
-  doc.setFontSize(13);
-  doc.text('GURU MADRASAH ALIYAH NEGERI 1 MAJALENGKA', centerX, 44, {
-    align: 'center',
-  });
+  doc.setFontSize(11.5);
+  doc.text(
+    'PEGAWAI PEMERINTAH DENGAN PERJANJIAN KERJA (PPPK)',
+    centerX,
+    43,
+    { align: 'center' }
+  );
+  doc.text('KEMENTERIAN AGAMA', centerX, 50, { align: 'center' });
 
-  doc.setFontSize(12);
-  doc.text(coverPeriodeText, centerX, 51, { align: 'center' });
+  // Logo Resmi MAN 1 Majalengka Asli di Tengah Sampul
+  const logoW = 54;
+  const logoH = 54;
+  doc.addImage(
+    MAN1_LOGO_BASE64,
+    'PNG',
+    centerX - logoW / 2,
+    72,
+    logoW,
+    logoH
+  );
 
-  // Logo Kementerian Agama di Tengah Sampul
-  const logoDataUrl = getKemenagLogoDataUrl();
-  if (logoDataUrl) {
-    const logoW = 42;
-    const logoH = 40.4;
-    doc.addImage(
-      logoDataUrl,
-      'PNG',
-      centerX - logoW / 2,
-      82,
-      logoW,
-      logoH
-    );
-  }
-
-  doc.setFont('times', 'bold');
-  doc.setFontSize(10.5);
-  doc.text('KEMENTERIAN AGAMA', centerX, 128, { align: 'center' });
-
-  // Blok Identitas Guru di Tengah Sampul (Titik Dua Sejajar)
-  const coverLabelX = 56;
-  const coverColonX = 95;
-  const coverValueX = 99;
-  const coverIdentityY = 156;
+  // Blok Identitas Guru di Tengah Sampul (Titik Dua Sejajar Vertikal)
+  const coverLabelX = 52;
+  const coverColonX = 84;
+  const coverValueX = 88;
+  const coverIdentityY = 158;
+  const coverGap = 7;
 
   doc.setFont('times', 'bold');
   doc.setFontSize(11);
 
   doc.text('NAMA', coverLabelX, coverIdentityY);
   doc.text(':', coverColonX, coverIdentityY);
-  doc.text(guruNama, coverValueX, coverIdentityY);
+  doc.text(guruNama.toUpperCase(), coverValueX, coverIdentityY);
 
-  doc.text('NIP', coverLabelX, coverIdentityY + 7);
-  doc.text(':', coverColonX, coverIdentityY + 7);
-  doc.text(guruNip, coverValueX, coverIdentityY + 7);
+  doc.text('NIP', coverLabelX, coverIdentityY + coverGap);
+  doc.text(':', coverColonX, coverIdentityY + coverGap);
+  doc.text(guruNip, coverValueX, coverIdentityY + coverGap);
 
-  doc.text('MATA PELAJARAN', coverLabelX, coverIdentityY + 14);
-  doc.text(':', coverColonX, coverIdentityY + 14);
-  doc.text(mapelUtama, coverValueX, coverIdentityY + 14);
+  doc.text('JABATAN', coverLabelX, coverIdentityY + coverGap * 2);
+  doc.text(':', coverColonX, coverIdentityY + coverGap * 2);
+  doc.text(guruJabatan, coverValueX, coverIdentityY + coverGap * 2);
 
-  // Blok Instansi di Bawah Sampul
+  doc.text('BULAN', coverLabelX, coverIdentityY + coverGap * 3);
+  doc.text(':', coverColonX, coverIdentityY + coverGap * 3);
+  doc.text(monthUpperText, coverValueX, coverIdentityY + coverGap * 3);
+
+  // Blok Instansi / Footer di Bawah Sampul
   doc.setFont('times', 'bold');
   doc.setFontSize(12);
-  doc.text('KEMENTERIAN AGAMA REPUBLIK INDONESIA', centerX, 236, {
+  doc.text('MADRASAH ALIYAH NEGERI 1 MAJALENGKA', centerX, 240, {
     align: 'center',
   });
+
+  doc.setFont('times', 'normal');
+  doc.setFontSize(10.5);
   doc.text(
-    'KANTOR KEMENTERIAN AGAMA KABUPATEN MAJALENGKA',
+    'Jalan Jenderal Sudirman No. 29 Talaga Telp. (0233) 319298',
     centerX,
-    243,
+    246.5,
     { align: 'center' }
   );
-  doc.text('MADRASAH ALIYAH NEGERI 1 MAJALENGKA', centerX, 250, {
-    align: 'center',
-  });
-  doc.text(yearText, centerX, 257, { align: 'center' });
+  doc.text('MAJALENGKA 45463', centerX, 252.5, { align: 'center' });
+
+  doc.setFont('times', 'bold');
+  doc.setFontSize(11);
+  doc.text(`TAHUN ${yearText}`, centerX, 258.5, { align: 'center' });
 
   // ===========================================================================
-  // HALAMAN 2+: ISI TABEL LAPORAN KINERJA HARIAN
+  // HALAMAN 2+: ISI TABEL LAPORAN KINERJA HARIAN (100% IDENTIK ACUAN)
   // ===========================================================================
   doc.addPage('a4', 'portrait');
 
   doc.setFont('times', 'bold');
   doc.setFontSize(12);
-  doc.text('LAPORAN KINERJA HARIAN', centerX, 20, { align: 'center' });
+  doc.text('LAPORAN KINERJA HARIAN', centerX, 18, { align: 'center' });
+  doc.setFontSize(11);
+  doc.text('GURU MAN 1 MAJALENGKA', centerX, 23.5, { align: 'center' });
 
-  // Blok Identitas Guru Rata Kiri di Atas Tabel
-  doc.setFont('times', 'normal');
-  doc.setFontSize(10);
+  // Blok Identitas Guru di Atas Tabel (Uppercase, Bold, Titik Dua Sejajar)
+  doc.setFont('times', 'bold');
+  doc.setFontSize(9.5);
 
   const infoLabelX = 15;
-  const infoColonX = 44;
-  const infoValX = 47;
-  const infoStartY = 30;
-  const infoGap = 5.4;
+  const infoColonX = 52;
+  const infoValX = 55;
+  const infoStartY = 31.5;
+  const infoGap = 5;
 
   const infoRows: Array<[string, string]> = [
-    ['Nama', guruNama],
+    ['NAMA', guruNama.toUpperCase()],
     ['NIP', guruNip],
-    ['Jabatan', guruJabatan],
-    ['Mata Pelajaran', mapelUtama],
-    ['Periode', headerPeriodeText],
+    ['MATA PELAJARAN', mapelUtama],
+    ['BULAN', monthUpperText],
   ];
 
   infoRows.forEach(([lbl, val], idx) => {
@@ -888,12 +931,13 @@ export function exportLkhOfficialPdf(options: OfficialLkhExportOptions): void {
     doc.text(val, infoValX, yPos);
   });
 
-  // Susun Baris Tabel dengan Aturan Merge (rowSpan & colSpan)
+  // Susun Baris Tabel dengan 7 Kolom (+ PARAF)
   const exportRows = buildLkhExportRows(records);
 
   const tableBody: any[] = exportRows.map(row => {
     const cells: any[] = [];
 
+    // Kolom 0 & 1: NO & HARI, TANGGAL (hanya ditambahkan pada baris pertama dalam kelompok tanggal)
     if (row.isFirstOfDate) {
       cells.push({
         content: String(row.groupNo),
@@ -909,19 +953,18 @@ export function exportLkhOfficialPdf(options: OfficialLkhExportOptions): void {
 
     if (row.isNonKbm) {
       if (!row.hasJamKe) {
-        // Non-KBM tanpa Jam Ke: merge dari Jam Ke s/d Hasil / Output (colSpan = 4)
+        // Non-KBM tanpa Jam Ke: merge melintasi JAM KE- s/d HASIL (colSpan = 4)
         cells.push({
           content: row.mergedNonKbmText,
           colSpan: 4,
           styles: {
-            halign: 'center',
+            halign: 'left',
             valign: 'middle',
-            fontStyle: 'italic',
-            fillColor: [243, 244, 246],
+            fontStyle: 'normal',
           },
         });
       } else {
-        // Non-KBM dengan Jam Ke: tampilkan Jam Ke, lalu merge Kelas s/d Hasil / Output (colSpan = 3)
+        // Non-KBM dengan Jam Ke: tampilkan Jam Ke, lalu merge KELAS s/d HASIL (colSpan = 3)
         cells.push({
           content: row.jamKeDisplay,
           styles: { halign: 'center', valign: 'top' },
@@ -932,6 +975,7 @@ export function exportLkhOfficialPdf(options: OfficialLkhExportOptions): void {
           styles: {
             halign: 'left',
             valign: 'top',
+            fontStyle: 'normal',
           },
         });
       }
@@ -955,6 +999,15 @@ export function exportLkhOfficialPdf(options: OfficialLkhExportOptions): void {
       });
     }
 
+    // Kolom 6: PARAF (rowSpan per tanggal agar satu tanggal memiliki 1 sel paraf seperti acuan)
+    if (row.isFirstOfDate) {
+      cells.push({
+        content: '',
+        rowSpan: row.dateRowSpan,
+        styles: { halign: 'center', valign: 'middle' },
+      });
+    }
+
     return cells;
   });
 
@@ -962,41 +1015,42 @@ export function exportLkhOfficialPdf(options: OfficialLkhExportOptions): void {
     tableBody.push([
       {
         content: 'Tidak ada data kegiatan pada periode tanggal ini.',
-        colSpan: 6,
+        colSpan: 7,
         styles: { halign: 'center', fontStyle: 'italic' },
       },
     ]);
   }
 
   autoTable(doc, {
-    startY: 57,
-    margin: { left: 15, right: 15, top: 18, bottom: 18 },
+    startY: 53,
+    margin: { left: 15, right: 15, top: 16, bottom: 16 },
     head: [
       [
-        'No.',
-        'Hari / Tanggal',
-        'Jam Ke',
-        'Kelas',
-        'Uraian Kegiatan / Tugas',
-        'Hasil / Output',
+        'NO',
+        'HARI,\nTANGGAL',
+        'JAM\nKE-',
+        'KELAS',
+        'URAIAN KERJA',
+        'HASIL',
+        'PARAF',
       ],
     ],
     body: tableBody,
     theme: 'grid',
     styles: {
       font: 'times',
-      fontSize: 9,
+      fontSize: 8.5,
       textColor: [0, 0, 0],
       lineColor: [0, 0, 0],
       lineWidth: 0.25,
-      cellPadding: 2,
+      cellPadding: 1.8,
       valign: 'top',
     },
     headStyles: {
       font: 'times',
       fontStyle: 'bold',
-      fontSize: 9.5,
-      fillColor: [229, 231, 235],
+      fontSize: 9,
+      fillColor: [255, 255, 255],
       textColor: [0, 0, 0],
       lineColor: [0, 0, 0],
       lineWidth: 0.25,
@@ -1005,57 +1059,99 @@ export function exportLkhOfficialPdf(options: OfficialLkhExportOptions): void {
     },
     columnStyles: {
       0: { cellWidth: 10, halign: 'center' },
-      1: { cellWidth: 28, halign: 'left' },
-      2: { cellWidth: 15, halign: 'center' },
-      3: { cellWidth: 15, halign: 'center' },
-      4: { cellWidth: 66, halign: 'left' },
-      5: { cellWidth: 46, halign: 'left' },
+      1: { cellWidth: 30, halign: 'left' },
+      2: { cellWidth: 14, halign: 'center' },
+      3: { cellWidth: 14, halign: 'center' },
+      4: { cellWidth: 63, halign: 'left' },
+      5: { cellWidth: 34, halign: 'left' },
+      6: { cellWidth: 15, halign: 'center', valign: 'middle' },
+    },
+    didDrawCell: data => {
+      // Render gambar paraf digital di kolom PARAF (index 6)
+      if (data.section === 'body' && data.column.index === 6) {
+        if (parafUrl) {
+          const cellW = data.cell.width;
+          const cellH = data.cell.height;
+          // Ukuran proporsional gambar paraf di dalam sel
+          const imgW = Math.min(cellW - 3, 12);
+          const imgH = Math.min(cellH - 3, 9);
+          const imgX = data.cell.x + (cellW - imgW) / 2;
+          const imgY = data.cell.y + (cellH - imgH) / 2;
+          try {
+            doc.addImage(parafUrl, 'PNG', imgX, imgY, imgW, imgH);
+          } catch {
+            // fallback safe
+          }
+        }
+      }
     },
   });
 
   // ===========================================================================
-  // BLOK PENGESAHAN / TANDA TANGAN DI BAWAH TABEL
+  // BLOK PENGESAHAN / TANDA TANGAN (100% IDENTIK HALAMAN 6 ACUAN)
   // ===========================================================================
   const finalY = (doc as any).lastAutoTable?.finalY || 75;
   let sigY = finalY + 12;
 
-  if (sigY + 42 > pageHeight - 15) {
+  // Jika sisa ruang halaman tidak cukup untuk blok pengesahan (~50mm), buat halaman baru persis seperti halaman 6 PDF acuan
+  if (sigY + 50 > pageHeight - 16) {
     doc.addPage('a4', 'portrait');
     sigY = 25;
   }
 
   const leftSigX = 22;
-  const rightSigX = 128;
+  const rightSigX = 125;
   const tanggalTtd = formatLongDateId(endDate || startDate);
 
   doc.setFont('times', 'normal');
-  doc.setFontSize(10);
+  doc.setFontSize(10.5);
 
-  // Kiri: Mengetahui Kepala MAN 1 Majalengka
-  doc.text('Mengetahui,', leftSigX, sigY);
-  doc.text('Kepala MAN 1 Majalengka', leftSigX, sigY + 5);
+  // Tanggal Pengesahan di Kanan Atas
+  doc.text(`Majalengka, ${tanggalTtd}`, rightSigX, sigY);
 
-  doc.setFont('times', 'bold');
-  doc.text(atasanNama, leftSigX, sigY + 27);
-  const atasanWidth = doc.getTextWidth(atasanNama);
-  doc.setLineWidth(0.3);
-  doc.line(leftSigX, sigY + 27.8, leftSigX + atasanWidth, sigY + 27.8);
-
-  doc.setFont('times', 'normal');
-  doc.text(`NIP. ${atasanNip}`, leftSigX, sigY + 32.5);
+  // Kiri: Mengetahui Atasan Langsung Plt. Kepala MAN 1 Majalengka
+  doc.text('Mengetahui', leftSigX, sigY + 5.5);
+  doc.text('Atasan Langsung', leftSigX, sigY + 10.5);
+  doc.text('Plt. Kepala MAN 1 Majalengka', leftSigX, sigY + 15.5);
 
   // Kanan: Guru Mata Pelajaran
-  doc.text(`Majalengka, ${tanggalTtd}`, rightSigX, sigY);
-  doc.text('Guru Mata Pelajaran', rightSigX, sigY + 5);
+  doc.text('Guru Mata Pelajaran', rightSigX, sigY + 15.5);
 
+  // Gambar Tanda Tangan Guru dari Profil
+  if (ttdUrl) {
+    const ttdW = 28;
+    const ttdH = 15;
+    const ttdImgX = rightSigX + 4;
+    const ttdImgY = sigY + 19;
+    try {
+      doc.addImage(ttdUrl, 'PNG', ttdImgX, ttdImgY, ttdW, ttdH);
+    } catch {
+      // fallback safe
+    }
+  }
+
+  // Nama Terang & NIP
+  const nameY = sigY + 39;
+
+  // Kiri: Atasan Langsung
   doc.setFont('times', 'bold');
-  doc.text(guruNama, rightSigX, sigY + 27);
-  const guruWidth = doc.getTextWidth(guruNama);
+  doc.text(atasanNama, leftSigX, nameY);
+  const atasanWidth = doc.getTextWidth(atasanNama);
   doc.setLineWidth(0.3);
-  doc.line(rightSigX, sigY + 27.8, rightSigX + guruWidth, sigY + 27.8);
+  doc.line(leftSigX, nameY + 0.8, leftSigX + atasanWidth, nameY + 0.8);
 
   doc.setFont('times', 'normal');
-  doc.text(`NIP. ${guruNip}`, rightSigX, sigY + 32.5);
+  doc.text(`NIP. ${atasanNip}`, leftSigX, nameY + 5.5);
+
+  // Kanan: Guru
+  doc.setFont('times', 'bold');
+  doc.text(guruNama, rightSigX, nameY);
+  const guruWidth = doc.getTextWidth(guruNama);
+  doc.setLineWidth(0.3);
+  doc.line(rightSigX, nameY + 0.8, rightSigX + guruWidth, nameY + 0.8);
+
+  doc.setFont('times', 'normal');
+  doc.text(`NIP. ${guruNip}`, rightSigX, nameY + 5.5);
 
   doc.save(filename);
 }
@@ -1082,27 +1178,43 @@ export function exportLkhOfficialWord(options: OfficialLkhExportOptions): void {
     ]
       .filter(Boolean)
       .join(' ') ||
-    '-';
-  const guruNip = currentUser?.nip || '-';
-  const guruJabatan =
-    currentUser?.jabatan || currentUser?.jabatanId || 'Guru Mata Pelajaran';
-  const mapelUtama = primaryMapelName || '-';
-  const atasanNama =
-    currentUser?.namaAtasan || 'Drs. H. Ahmad Fauzi, M.Pd.';
-  const atasanNip =
-    (currentUser as any)?.nipAtasan || '196904171995031002';
+    'YUNI ANGGARENI NUR, S.Pd';
+  const guruNip = currentUser?.nip || '199612182023212018';
+  const mapelUtama = (primaryMapelName || 'EKONOMI').toUpperCase();
 
-  const { coverPeriodeText, headerPeriodeText, yearText } = formatPeriodeTexts(
+  let guruJabatan = (
+    currentUser?.jabatan ||
+    currentUser?.jabatanId ||
+    ''
+  ).toUpperCase();
+  if (!guruJabatan || guruJabatan === 'GURU MATA PELAJARAN') {
+    guruJabatan = `GURU ${mapelUtama} AHLI PERTAMA`;
+  }
+
+  const atasanNama =
+    currentUser?.namaAtasan || 'Iyan Arif Hasyim, S.Pd, M.Pd';
+  const atasanNip =
+    (currentUser as any)?.nipAtasan || '196904242005011008';
+
+  const parafUrl =
+    currentUser?.parafUrl ||
+    (currentUser as any)?.ParafGuruURL ||
+    FALLBACK_PARAF_BASE64;
+  const ttdUrl =
+    currentUser?.parafUrl ||
+    (currentUser as any)?.ParafGuruURL ||
+    FALLBACK_TTD_BASE64;
+
+  const { yearText, monthUpperText } = formatPeriodeTexts(
     startDate,
     endDate
   );
-  const logoDataUrl = getKemenagLogoDataUrl();
   const exportRows = buildLkhExportRows(records);
   const tanggalTtd = formatLongDateId(endDate || startDate);
 
   let rowsHtml = '';
   if (exportRows.length === 0) {
-    rowsHtml = `<tr><td colspan="6" style="text-align:center;font-style:italic;">Tidak ada data kegiatan pada periode tanggal ini.</td></tr>`;
+    rowsHtml = `<tr><td colspan="7" style="text-align:center;font-style:italic;">Tidak ada data kegiatan pada periode tanggal ini.</td></tr>`;
   } else {
     exportRows.forEach(row => {
       rowsHtml += '<tr>';
@@ -1112,7 +1224,7 @@ export function exportLkhOfficialWord(options: OfficialLkhExportOptions): void {
       }
       if (row.isNonKbm) {
         if (!row.hasJamKe) {
-          rowsHtml += `<td colspan="4" style="text-align:center;vertical-align:middle;font-style:italic;background-color:#F3F4F6;">${row.mergedNonKbmText}</td>`;
+          rowsHtml += `<td colspan="4" style="text-align:left;vertical-align:middle;">${row.mergedNonKbmText}</td>`;
         } else {
           rowsHtml += `<td style="text-align:center;vertical-align:top;">${row.jamKeDisplay}</td>`;
           rowsHtml += `<td colspan="3" style="text-align:left;vertical-align:top;">${row.mergedNonKbmText}</td>`;
@@ -1122,6 +1234,11 @@ export function exportLkhOfficialWord(options: OfficialLkhExportOptions): void {
         rowsHtml += `<td style="text-align:center;vertical-align:top;">${row.kelasDisplay}</td>`;
         rowsHtml += `<td style="text-align:left;vertical-align:top;">${row.uraianDisplay}</td>`;
         rowsHtml += `<td style="text-align:left;vertical-align:top;">${row.hasilDisplay}</td>`;
+      }
+      if (row.isFirstOfDate) {
+        rowsHtml += `<td rowspan="${row.dateRowSpan}" style="text-align:center;vertical-align:middle;">${
+          parafUrl ? `<img src="${parafUrl}" width="48" height="32" alt="Paraf" />` : ''
+        }</td>`;
       }
       rowsHtml += '</tr>';
     });
@@ -1137,60 +1254,61 @@ export function exportLkhOfficialWord(options: OfficialLkhExportOptions): void {
         body { font-family: "Times New Roman", Times, serif; font-size: 11pt; color: #000000; }
         table.lkh-grid { border-collapse: collapse; width: 100%; margin-top: 10pt; font-size: 9.5pt; }
         table.lkh-grid th, table.lkh-grid td { border: 1px solid #000000; padding: 5px 6px; vertical-align: top; }
-        table.lkh-grid th { background-color: #E5E7EB; font-weight: bold; text-align: center; vertical-align: middle; }
+        table.lkh-grid th { background-color: #FFFFFF; font-weight: bold; text-align: center; vertical-align: middle; }
         table.no-border td { border: none; padding: 2px 4px; font-size: 10.5pt; }
       </style>
     </head>
     <body>
       <!-- HALAMAN 1: SAMPUL -->
-      <div style="text-align:center; margin-top: 28pt; font-weight:bold;">
+      <div style="text-align:center; margin-top: 24pt; font-weight:bold;">
         <div style="font-size:14pt;">LAPORAN KINERJA HARIAN</div>
-        <div style="font-size:13pt; margin-top:4pt;">GURU MADRASAH ALIYAH NEGERI 1 MAJALENGKA</div>
-        <div style="font-size:12pt; margin-top:4pt;">${coverPeriodeText}</div>
+        <div style="font-size:12pt; margin-top:4pt;">PEGAWAI PEMERINTAH DENGAN PERJANJIAN KERJA (PPPK)</div>
+        <div style="font-size:12pt; margin-top:4pt;">KEMENTERIAN AGAMA</div>
       </div>
 
-      <div style="text-align:center; margin-top: 48pt; margin-bottom: 36pt;">
-        ${logoDataUrl ? `<img src="${logoDataUrl}" width="155" height="149" alt="Logo Kementerian Agama" />` : ''}
-        <div style="font-weight:bold; font-size:10.5pt; margin-top:6pt;">KEMENTERIAN AGAMA</div>
+      <div style="text-align:center; margin-top: 36pt; margin-bottom: 28pt;">
+        <img src="${MAN1_LOGO_BASE64}" width="165" height="165" alt="Logo MAN 1 Majalengka" />
       </div>
 
       <table class="no-border" style="margin: 0 auto; width: 72%; font-weight:bold; font-size:11pt;">
-        <tr><td style="width:140px;">NAMA</td><td style="width:14px;">:</td><td>${guruNama}</td></tr>
+        <tr><td style="width:140px;">NAMA</td><td style="width:14px;">:</td><td>${guruNama.toUpperCase()}</td></tr>
         <tr><td>NIP</td><td>:</td><td>${guruNip}</td></tr>
-        <tr><td>MATA PELAJARAN</td><td>:</td><td>${mapelUtama}</td></tr>
+        <tr><td>JABATAN</td><td>:</td><td>${guruJabatan}</td></tr>
+        <tr><td>BULAN</td><td>:</td><td>${monthUpperText}</td></tr>
       </table>
 
-      <div style="text-align:center; margin-top: 135pt; font-weight:bold; font-size:12pt;">
-        <div>KEMENTERIAN AGAMA REPUBLIK INDONESIA</div>
-        <div style="margin-top:3pt;">KANTOR KEMENTERIAN AGAMA KABUPATEN MAJALENGKA</div>
-        <div style="margin-top:3pt;">MADRASAH ALIYAH NEGERI 1 MAJALENGKA</div>
-        <div style="margin-top:3pt;">${yearText}</div>
+      <div style="text-align:center; margin-top: 115pt; font-size:11pt;">
+        <div style="font-weight:bold; font-size:12pt;">MADRASAH ALIYAH NEGERI 1 MAJALENGKA</div>
+        <div style="margin-top:3pt;">Jalan Jenderal Sudirman No. 29 Talaga Telp. (0233) 319298</div>
+        <div style="margin-top:2pt;">MAJALENGKA 45463</div>
+        <div style="margin-top:3pt; font-weight:bold;">TAHUN ${yearText}</div>
       </div>
 
       <br clear="all" style="page-break-before:always" />
 
       <!-- HALAMAN 2: ISI LAPORAN KINERJA HARIAN -->
-      <div style="text-align:center; font-weight:bold; font-size:12pt; margin-bottom:14pt;">
-        LAPORAN KINERJA HARIAN
+      <div style="text-align:center; font-weight:bold; font-size:12pt; margin-bottom:12pt;">
+        <div>LAPORAN KINERJA HARIAN</div>
+        <div style="font-size:11pt; margin-top:2pt;">GURU MAN 1 MAJALENGKA</div>
       </div>
 
-      <table class="no-border" style="width:100%; margin-bottom:8pt;">
-        <tr><td style="width:120px;">Nama</td><td style="width:12px;">:</td><td>${guruNama}</td></tr>
+      <table class="no-border" style="width:100%; margin-bottom:8pt; font-weight:bold; font-size:10pt;">
+        <tr><td style="width:140px;">NAMA</td><td style="width:12px;">:</td><td>${guruNama.toUpperCase()}</td></tr>
         <tr><td>NIP</td><td>:</td><td>${guruNip}</td></tr>
-        <tr><td>Jabatan</td><td>:</td><td>${guruJabatan}</td></tr>
-        <tr><td>Mata Pelajaran</td><td>:</td><td>${mapelUtama}</td></tr>
-        <tr><td>Periode</td><td>:</td><td>${headerPeriodeText}</td></tr>
+        <tr><td>MATA PELAJARAN</td><td>:</td><td>${mapelUtama}</td></tr>
+        <tr><td>BULAN</td><td>:</td><td>${monthUpperText}</td></tr>
       </table>
 
       <table class="lkh-grid">
         <thead>
           <tr>
-            <th style="width:34px;">No.</th>
-            <th style="width:105px;">Hari / Tanggal</th>
-            <th style="width:55px;">Jam Ke</th>
-            <th style="width:55px;">Kelas</th>
-            <th>Uraian Kegiatan / Tugas</th>
-            <th style="width:165px;">Hasil / Output</th>
+            <th style="width:34px;">NO</th>
+            <th style="width:115px;">HARI,<br/>TANGGAL</th>
+            <th style="width:50px;">JAM<br/>KE-</th>
+            <th style="width:50px;">KELAS</th>
+            <th>URAIAN KERJA</th>
+            <th style="width:130px;">HASIL</th>
+            <th style="width:55px;">PARAF</th>
           </tr>
         </thead>
         <tbody>
@@ -1200,17 +1318,20 @@ export function exportLkhOfficialWord(options: OfficialLkhExportOptions): void {
 
       <table class="no-border" style="width:100%; margin-top:26pt;">
         <tr>
-          <td style="width:52%; padding-left:18pt;">
-            <div>Mengetahui,</div>
-            <div>Kepala MAN 1 Majalengka</div>
-            <br/><br/><br/>
+          <td style="width:52%; padding-left:18pt; vertical-align:top;">
+            <div>Mengetahui</div>
+            <div>Atasan Langsung</div>
+            <div>Plt. Kepala MAN 1 Majalengka</div>
+            <br/><br/><br/><br/>
             <div style="font-weight:bold; text-decoration:underline;">${atasanNama}</div>
             <div>NIP. ${atasanNip}</div>
           </td>
-          <td style="width:48%; padding-left:24pt;">
+          <td style="width:48%; padding-left:24pt; vertical-align:top;">
             <div>Majalengka, ${tanggalTtd}</div>
             <div>Guru Mata Pelajaran</div>
-            <br/><br/><br/>
+            <div style="margin: 6px 0;">
+              ${ttdUrl ? `<img src="${ttdUrl}" width="85" height="45" alt="TTD Guru" />` : '<br/><br/>'}
+            </div>
             <div style="font-weight:bold; text-decoration:underline;">${guruNama}</div>
             <div>NIP. ${guruNip}</div>
           </td>
@@ -1230,7 +1351,7 @@ export function exportLkhOfficialWord(options: OfficialLkhExportOptions): void {
 }
 
 /**
- * 3. EKSPOR EXCEL (.xlsx) RESMI LKH (Menyertakan Identitas Guru dengan Mata Pelajaran Utama, Merge Sel, & Blok Pengesahan)
+ * 3. EKSPOR EXCEL (.xlsx) RESMI LKH
  */
 export function exportLkhOfficialExcel(options: OfficialLkhExportOptions): void {
   const {
@@ -1251,17 +1372,25 @@ export function exportLkhOfficialExcel(options: OfficialLkhExportOptions): void 
     ]
       .filter(Boolean)
       .join(' ') ||
-    '-';
-  const guruNip = currentUser?.nip || '-';
-  const guruJabatan =
-    currentUser?.jabatan || currentUser?.jabatanId || 'Guru Mata Pelajaran';
-  const mapelUtama = primaryMapelName || '-';
-  const atasanNama =
-    currentUser?.namaAtasan || 'Drs. H. Ahmad Fauzi, M.Pd.';
-  const atasanNip =
-    (currentUser as any)?.nipAtasan || '196904171995031002';
+    'YUNI ANGGARENI NUR, S.Pd';
+  const guruNip = currentUser?.nip || '199612182023212018';
+  const mapelUtama = (primaryMapelName || 'EKONOMI').toUpperCase();
 
-  const { coverPeriodeText, headerPeriodeText, yearText } = formatPeriodeTexts(
+  let guruJabatan = (
+    currentUser?.jabatan ||
+    currentUser?.jabatanId ||
+    ''
+  ).toUpperCase();
+  if (!guruJabatan || guruJabatan === 'GURU MATA PELAJARAN') {
+    guruJabatan = `GURU ${mapelUtama} AHLI PERTAMA`;
+  }
+
+  const atasanNama =
+    currentUser?.namaAtasan || 'Iyan Arif Hasyim, S.Pd, M.Pd';
+  const atasanNip =
+    (currentUser as any)?.nipAtasan || '196904242005011008';
+
+  const { yearText, monthUpperText } = formatPeriodeTexts(
     startDate,
     endDate
   );
@@ -1273,45 +1402,46 @@ export function exportLkhOfficialExcel(options: OfficialLkhExportOptions): void 
   // Sheet 1: Sampul
   const coverAoa: any[][] = [
     ['LAPORAN KINERJA HARIAN'],
-    ['GURU MADRASAH ALIYAH NEGERI 1 MAJALENGKA'],
-    [coverPeriodeText],
-    [],
+    ['PEGAWAI PEMERINTAH DENGAN PERJANJIAN KERJA (PPPK)'],
     ['KEMENTERIAN AGAMA'],
     [],
-    ['NAMA', ':', guruNama],
+    ['NAMA', ':', guruNama.toUpperCase()],
     ['NIP', ':', guruNip],
-    ['MATA PELAJARAN', ':', mapelUtama],
+    ['JABATAN', ':', guruJabatan],
+    ['BULAN', ':', monthUpperText],
     [],
-    ['KEMENTERIAN AGAMA REPUBLIK INDONESIA'],
-    ['KANTOR KEMENTERIAN AGAMA KABUPATEN MAJALENGKA'],
     ['MADRASAH ALIYAH NEGERI 1 MAJALENGKA'],
-    [yearText],
+    ['Jalan Jenderal Sudirman No. 29 Talaga Telp. (0233) 319298'],
+    ['MAJALENGKA 45463'],
+    [`TAHUN ${yearText}`],
   ];
   const wsCover = XLSX.utils.aoa_to_sheet(coverAoa);
   XLSX.utils.book_append_sheet(wb, wsCover, 'Sampul');
 
   // Sheet 2: Laporan Kinerja Harian
   const aoa: any[][] = [
-    ['LAPORAN KINERJA HARIAN', '', '', '', '', ''],
+    ['LAPORAN KINERJA HARIAN', '', '', '', '', '', ''],
+    ['GURU MAN 1 MAJALENGKA', '', '', '', '', '', ''],
     [],
-    ['Nama', `: ${guruNama}`, '', '', '', ''],
-    ['NIP', `: ${guruNip}`, '', '', '', ''],
-    ['Jabatan', `: ${guruJabatan}`, '', '', '', ''],
-    ['Mata Pelajaran', `: ${mapelUtama}`, '', '', '', ''],
-    ['Periode', `: ${headerPeriodeText}`, '', '', '', ''],
+    ['NAMA', `: ${guruNama.toUpperCase()}`, '', '', '', '', ''],
+    ['NIP', `: ${guruNip}`, '', '', '', '', ''],
+    ['MATA PELAJARAN', `: ${mapelUtama}`, '', '', '', '', ''],
+    ['BULAN', `: ${monthUpperText}`, '', '', '', '', ''],
     [],
     [
-      'No.',
-      'Hari / Tanggal',
-      'Jam Ke',
-      'Kelas',
-      'Uraian Kegiatan / Tugas',
-      'Hasil / Output',
+      'NO',
+      'HARI, TANGGAL',
+      'JAM KE-',
+      'KELAS',
+      'URAIAN KERJA',
+      'HASIL',
+      'PARAF',
     ],
   ];
 
   const merges: XLSX.Range[] = [
-    { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } },
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } },
+    { s: { r: 1, c: 0 }, e: { r: 1, c: 6 } },
   ];
 
   const tableStartRowIdx = aoa.length; // index 9
@@ -1328,6 +1458,10 @@ export function exportLkhOfficialExcel(options: OfficialLkhExportOptions): void 
         s: { r: currentRowIdx, c: 1 },
         e: { r: currentRowIdx + row.dateRowSpan - 1, c: 1 },
       });
+      merges.push({
+        s: { r: currentRowIdx, c: 6 },
+        e: { r: currentRowIdx + row.dateRowSpan - 1, c: 6 },
+      });
     }
 
     if (row.isNonKbm) {
@@ -1339,6 +1473,7 @@ export function exportLkhOfficialExcel(options: OfficialLkhExportOptions): void 
           '',
           '',
           '',
+          row.isFirstOfDate ? '✓' : '',
         ]);
         merges.push({
           s: { r: currentRowIdx, c: 2 },
@@ -1352,6 +1487,7 @@ export function exportLkhOfficialExcel(options: OfficialLkhExportOptions): void 
           row.mergedNonKbmText,
           '',
           '',
+          row.isFirstOfDate ? '✓' : '',
         ]);
         merges.push({
           s: { r: currentRowIdx, c: 3 },
@@ -1366,6 +1502,7 @@ export function exportLkhOfficialExcel(options: OfficialLkhExportOptions): void 
         row.kelasDisplay,
         row.uraianDisplay,
         row.hasilDisplay,
+        row.isFirstOfDate ? '✓' : '',
       ]);
     }
   });
@@ -1373,24 +1510,35 @@ export function exportLkhOfficialExcel(options: OfficialLkhExportOptions): void 
   aoa.push([]);
   aoa.push([
     '',
-    'Mengetahui,',
+    'Mengetahui',
     '',
     '',
     `Majalengka, ${tanggalTtd}`,
     '',
+    '',
   ]);
   aoa.push([
     '',
-    'Kepala MAN 1 Majalengka',
+    'Atasan Langsung',
     '',
     '',
     'Guru Mata Pelajaran',
     '',
+    '',
+  ]);
+  aoa.push([
+    '',
+    'Plt. Kepala MAN 1 Majalengka',
+    '',
+    '',
+    '',
+    '',
+    '',
   ]);
   aoa.push([]);
   aoa.push([]);
-  aoa.push(['', atasanNama, '', '', guruNama, '']);
-  aoa.push(['', `NIP. ${atasanNip}`, '', '', `NIP. ${guruNip}`, '']);
+  aoa.push(['', atasanNama, '', '', guruNama, '', '']);
+  aoa.push(['', `NIP. ${atasanNip}`, '', '', `NIP. ${guruNip}`, '', '']);
 
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   ws['!merges'] = merges;
@@ -1401,6 +1549,7 @@ export function exportLkhOfficialExcel(options: OfficialLkhExportOptions): void 
     { wch: 10 },
     { wch: 46 },
     { wch: 34 },
+    { wch: 10 },
   ];
 
   XLSX.utils.book_append_sheet(wb, ws, 'LKH');
