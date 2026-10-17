@@ -1,14 +1,15 @@
 {
   "id": "/",
-  "name": "Ajar MAN 1 Majalengka v.2",
-  "short_name": "AJAR v.2",
-  "description": "Aplikasi Jurnal dan Administrasi Pembelajaran - MAN 1 Majalengka v.2",
+  "name": "AJAR 2.0 MAN 1 Majalengka",
+  "short_name": "AJAR 2.0",
+  "description": "Aplikasi Jurnal dan Administrasi Pembelajaran Guru - MAN 1 Majalengka",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#EBF0F8",
-  "theme_color": "#EBF0F8",
+  "background_color": "#EEF2F6",
+  "theme_color": "#EEF2F6",
   "orientation": "portrait-primary",
+  "categories": ["education", "productivity"],
   "icons": [
     {
       "src": "/icon-192.png",
