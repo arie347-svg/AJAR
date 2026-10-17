@@ -1,6 +1,6 @@
 {
-  "summary": "Rencana implementasi perbaikan presensi: penanganan kelas kosong dengan indikator ringkas dan validasi upload data siswa, perbaikan sorting urutan kelas numerik (XI.10 di bawah XI.9), penyederhanaan label list pertemuan ('Pertemuan 1' tanpa '#'), serta integrasi multi-layer fetch data siswa presensi agar data siswa di spreadsheet muncul secara andal.",
-  "updatedAt": "2026-10-16T14:26:03.051550539Z",
+  "summary": "Rencana implementasi format hasil download file LKH (PDF, Word, dan Excel) agar identik dengan dokumen contoh LKH_Yuni_1Sep2026-30Sep2026.pdf (Halaman Sampul resmi berlogo Kementerian Agama + Halaman Tabel Laporan Kinerja Harian dengan merge baris/kolom + Blok Pengesahan) serta pengisian otomatis Mata Pelajaran Utama guru.",
+  "updatedAt": "2026-10-17T16:15:36.741536019Z",
   "requestFeedback": true,
   "userFacing": true
 }

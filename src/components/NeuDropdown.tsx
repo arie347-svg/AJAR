@@ -70,7 +70,7 @@ export const NeuDropdown: React.FC<NeuDropdownProps> = ({
               selectedOption?.value ? 'text-slate-800' : 'text-slate-500'
             }`}
           >
-            {selectedOption ? selectedOption.label : placeholder}
+            {selectedOption?.value ? selectedOption.label : placeholder}
           </span>
         </div>
         <ChevronDown

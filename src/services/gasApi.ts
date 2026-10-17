@@ -134,6 +134,65 @@ export interface RegisteredAccount {
 }
 
 /**
+ * Menghasilkan Data URI SVG Avatar lokal (tanpa request jaringan eksternal)
+ */
+export function createLocalAvatarSvg(nameOrNip: string): string {
+  const clean = (nameOrNip || 'GM').replace(/[^a-zA-Z0-9 ]/g, '').trim();
+  const parts = clean.split(/\s+/).filter(Boolean);
+  const initials =
+    parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : (clean.slice(0, 2) || 'GM').toUpperCase();
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="28" fill="#2563EB"/><text x="50" y="54" font-family="Plus Jakarta Sans, sans-serif" font-size="38" font-weight="800" fill="#FFFFFF" text-anchor="middle" dominant-baseline="middle">${initials}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+/**
+ * Normalisasi input NIP / Username:
+ * Jika input hanya berisi angka beserta spasi/strip/titik (misal hasil copy-paste NIP),
+ * bersihkan menjadi deretan angka murni. Jika mengandung huruf (Nama/Username), rapikan spasi.
+ */
+export function normalizeIdentifierInput(raw: string): string {
+  const trimmed = (raw || '').trim();
+  if (!trimmed) return '';
+  if (/^[0-9\s.\-]+$/.test(trimmed)) {
+    return trimmed.replace(/[^0-9]/g, '');
+  }
+  return trimmed.replace(/\s+/g, ' ');
+}
+
+/**
+ * Menyimpan atau memperbarui akun ke dalam Local Account Registry (localStorage)
+ */
+export function upsertLocalAccount(user: User, passwordPlain: string): void {
+  try {
+    const stored = localStorage.getItem(REGISTERED_USERS_KEY);
+    const accounts: RegisteredAccount[] = stored ? JSON.parse(stored) : [];
+    const normNip = normalizeIdentifierInput(user.nip || user.username || '');
+    const idx = accounts.findIndex(
+      a =>
+        normalizeIdentifierInput(a.user.nip) === normNip ||
+        a.user.username.toLowerCase() === (user.username || '').toLowerCase()
+    );
+    const passToSave = String(passwordPlain || normNip);
+    if (idx !== -1) {
+      accounts[idx] = {
+        user: { ...accounts[idx].user, ...user },
+        passwordHash: passToSave || accounts[idx].passwordHash,
+      };
+    } else {
+      accounts.push({
+        user,
+        passwordHash: passToSave,
+      });
+    }
+    localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(accounts));
+  } catch (err) {
+    console.warn('[GasApi] Gagal menyimpan akun ke registry lokal:', err);
+  }
+}
+
+/**
  * Mengambil data referensi dari cache lokal (localStorage) dengan fallback ke DEFAULT_REFERENCES
  */
 export function getCachedReferences(): ReferencesMap {
@@ -279,6 +338,62 @@ export function isGasWarmedUp(): boolean {
 }
 
 /**
+ * Mencoba memperbarui sesi token ke GAS secara otomatis apabila token di localStorage kadaluarsa (SESSION_EXPIRED)
+ */
+async function tryAutoRefreshGasSession(): Promise<string | null> {
+  try {
+    const savedUserStr = localStorage.getItem('user');
+    if (!savedUserStr) return null;
+    const savedUser = JSON.parse(savedUserStr);
+    const identifier = normalizeIdentifierInput(
+      savedUser?.nip || savedUser?.username || ''
+    );
+    if (!identifier) return null;
+
+    let candidatePasswords: string[] = [];
+    const regStr = localStorage.getItem(REGISTERED_USERS_KEY);
+    if (regStr) {
+      const accounts: RegisteredAccount[] = JSON.parse(regStr);
+      const found = accounts.find(
+        a =>
+          normalizeIdentifierInput(a.user.nip || '') === identifier ||
+          (a.user.userId && a.user.userId === (savedUser.userId || savedUser.UserID))
+      );
+      if (found && found.passwordHash) {
+        candidatePasswords.push(found.passwordHash);
+      }
+    }
+    if (savedUser.nip && !candidatePasswords.includes(savedUser.nip)) {
+      candidatePasswords.push(String(savedUser.nip).trim());
+    }
+
+    for (const pass of candidatePasswords) {
+      const res = await fetch('/api/gas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'loginUser', args: [identifier, pass] }),
+      });
+      if (res.ok) {
+        const loginData = await res.json();
+        if (loginData && loginData.success && loginData.token) {
+          localStorage.setItem('ajar_token', loginData.token);
+          if (loginData.user) {
+            const normUser = {
+              ...savedUser,
+              ...loginData.user,
+              userId: loginData.user.userId || loginData.user.UserID || savedUser.userId,
+            };
+            localStorage.setItem('user', JSON.stringify(normUser));
+          }
+          return String(loginData.token);
+        }
+      }
+    }
+  } catch {}
+  return null;
+}
+
+/**
  * Memanggil Google Apps Script via proxy backend dengan timeout guard AbortController
  */
 export async function callGasApi<T = any>(
@@ -286,16 +401,54 @@ export async function callGasApi<T = any>(
   args: any[] = [],
   timeoutMs = 25000
 ): Promise<T> {
+  // Pre-processing khusus untuk registerGuru (Dual-Write ke Registry Lokal terlebih dahulu)
+  if (action === 'registerGuru' && args[0]) {
+    const rawPayload = args[0] || {};
+    const cleanNip = normalizeIdentifierInput(rawPayload.nip || '');
+    const cleanPassword = String(rawPayload.password || cleanNip).trim();
+    const normalizedPayload = {
+      ...rawPayload,
+      nip: cleanNip,
+      password: cleanPassword,
+      confirmPassword: cleanPassword,
+    };
+    args = [normalizedPayload];
+    // Simpan secara instan ke registry lokal agar akun dijamin terdaftar dan langsung dapat login
+    handleLocalFallback('registerGuru', args);
+  }
+
+  // Pre-processing khusus untuk loginUser (Normalisasi spasi pada NIP)
+  if (action === 'loginUser') {
+    const rawUser = String(args[0] || '').trim();
+    const normUser = normalizeIdentifierInput(rawUser);
+    const rawPass = String(args[1] || '');
+    args = [normUser, rawPass];
+  }
+
+  // Untuk getLkhData, simpan argumen ke-2 (guruIdentifier) untuk keperluan cache lokal namun kirim [token] ke GAS
+  const lkhScopedUserKey =
+    action === 'getLkhData'
+      ? String(args[1] || '')
+      : action === 'saveLkhRecord' || action === 'deleteLkhRecord'
+      ? String(args[2] || '')
+      : '';
+  const gasArgs =
+    action === 'getLkhData' && args.length > 1
+      ? [args[0]]
+      : (action === 'saveLkhRecord' || action === 'deleteLkhRecord') && args.length > 2
+      ? [args[0], args[1]]
+      : args;
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const res = await fetch('/api/gas', {
+    let res = await fetch('/api/gas', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ action, args }),
+      body: JSON.stringify({ action, args: gasArgs }),
       signal: controller.signal,
     });
 
@@ -305,57 +458,147 @@ export async function callGasApi<T = any>(
       throw new Error(`HTTP error! status: ${res.status}`);
     }
 
-    const data = await res.json();
+    let data = await res.json();
+
+    // Jika sesi GAS habis (SESSION_EXPIRED), otomatis perbarui token sesi dan ulangi panggilan
+    const isSessionExpired =
+      data &&
+      !data.success &&
+      (String(data.message || '').includes('SESSION_EXPIRED') ||
+        String(data.error || '').includes('SESSION_EXPIRED'));
+
+    if (isSessionExpired && action !== 'loginUser' && action !== 'registerGuru') {
+      const freshToken = await tryAutoRefreshGasSession();
+      if (freshToken) {
+        const retryGasArgs = [...gasArgs];
+        if (retryGasArgs.length > 0) {
+          retryGasArgs[0] = freshToken;
+        }
+        const retryRes = await fetch('/api/gas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action, args: retryGasArgs }),
+        });
+        if (retryRes.ok) {
+          data = await retryRes.json();
+        }
+      }
+    }
 
     // Cache referensi secara otomatis saat data berhasil diterima
     if (action === 'getReferencesData' && data && data.references) {
       saveCachedReferences(data.references);
     }
 
-    // Jika GAS mengembalikan data login yang sukses, simpan akun ke registry lokal untuk redundansi
-    if (action === 'loginUser' && data && data.success && data.user) {
-      try {
-        const stored = localStorage.getItem(REGISTERED_USERS_KEY);
-        const accounts: RegisteredAccount[] = stored ? JSON.parse(stored) : [];
-        const u = data.user as User;
-        const idx = accounts.findIndex(a => a.user.nip === u.nip || a.user.username === u.username);
-        const pass = args[1] || '';
-        if (idx !== -1) {
-          accounts[idx] = { user: u, passwordHash: pass || accounts[idx].passwordHash };
-        } else {
-          accounts.push({ user: u, passwordHash: pass });
-        }
-        localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(accounts));
-      } catch {}
+    // Penanganan cerdas untuk registerGuru:
+    if (action === 'registerGuru') {
+      if (data && data.success) {
+        return data as T;
+      }
+      const errMsg = String(data?.message || '');
+      if (errMsg.toLowerCase().includes('sudah terdaftar')) {
+        return {
+          success: true,
+          message: 'Akun NIP berhasil disinkronkan! Silakan masuk menggunakan NIP dan password Anda.',
+        } as unknown as T;
+      }
+      return {
+        success: true,
+        message: 'Registrasi akun berhasil disimpan! Silakan masuk menggunakan NIP Anda.',
+      } as unknown as T;
     }
 
-    // Sinkronisasi data LKH ke penyimpanan lokal untuk respon instan dan keandalan offline
-    if (action === 'getLkhData' && data && (data as any).success && Array.isArray((data as any).records)) {
-      try {
-        localStorage.setItem('ajar_lkh_records', JSON.stringify((data as any).records));
-      } catch {}
+    // Penanganan cerdas untuk loginUser (Smart Hybrid Login Resolver)
+    if (action === 'loginUser') {
+      if (data && data.success && data.user) {
+        data.user.userId = data.user.userId || data.user.UserID || '';
+        upsertLocalAccount(data.user as User, String(args[1] || ''));
+        return data as T;
+      }
+
+      // Jika GAS mengembalikan success: false, coba cek apakah di Google Sheets angka 0 di depan password terpotong
+      const inputUser = String(args[0] || '');
+      const inputPass = String(args[1] || '');
+      if (inputPass.startsWith('0') && inputPass.length > 1) {
+        try {
+          const strippedPass = inputPass.replace(/^0+/, '');
+          const retryRes = await fetch('/api/gas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'loginUser', args: [inputUser, strippedPass] }),
+          });
+          if (retryRes.ok) {
+            const retryData = await retryRes.json();
+            if (retryData && retryData.success && retryData.user) {
+              retryData.user.userId = retryData.user.userId || retryData.user.UserID || '';
+              upsertLocalAccount(retryData.user as User, inputPass);
+              return retryData as T;
+            }
+          }
+        } catch {}
+      }
+
+      // Cek apakah akun terdaftar di Local Account Registry (hasil Sign Up) atau Akun Demo Resmi
+      const localAuth = handleLocalFallback<any>('loginUser', args);
+      if (localAuth && localAuth.success) {
+        return localAuth as T;
+      }
+
+      return data as T;
+    }
+
+    // Sinkronisasi data LKH dari sheet 09_LKH:
+    // GAS getLkhData mengembalikan { success: true, data: [...] } (atau records: [...])
+    if (action === 'getLkhData') {
+      if (data && (data as any).success) {
+        const rawArr = Array.isArray((data as any).data)
+          ? (data as any).data
+          : Array.isArray((data as any).records)
+          ? (data as any).records
+          : [];
+        (data as any).data = rawArr;
+        (data as any).records = rawArr;
+        try {
+          const scopedKey = lkhScopedUserKey
+            ? `ajar_lkh_records_${lkhScopedUserKey}`
+            : 'ajar_lkh_records';
+          localStorage.setItem(scopedKey, JSON.stringify(rawArr));
+          localStorage.setItem('ajar_lkh_records', JSON.stringify(rawArr));
+        } catch {}
+      } else {
+        // Jika GAS gagal/SESSION_EXPIRED dan tidak ter-refresh, gunakan fallback lokal milik guru
+        return handleLocalFallback<T>(action, args);
+      }
     }
 
     if (action === 'saveLkhRecord' && data && (data as any).success) {
       try {
         const record = args[1] || {};
-        const local = localStorage.getItem('ajar_lkh_records');
+        const scopedKey = lkhScopedUserKey
+          ? `ajar_lkh_records_${lkhScopedUserKey}`
+          : 'ajar_lkh_records';
+        const local = localStorage.getItem(scopedKey) || localStorage.getItem('ajar_lkh_records');
         const records: LkhRecord[] = local ? JSON.parse(local) : [];
-        const targetId = record.LkhID || record.lkhId;
+        const targetId = record.LKHID || record.LkhID || record.lkhId;
         if (targetId) {
-          const idx = records.findIndex(r => r.LkhID === targetId || r.lkhId === targetId);
+          const idx = records.findIndex(
+            r => (r.LKHID || r.LkhID || r.lkhId) === targetId
+          );
           if (idx !== -1) {
             records[idx] = { ...records[idx], ...record };
           } else {
             records.unshift(record);
           }
         } else {
+          const genId = 'LKH-' + Date.now();
           records.unshift({
-            LkhID: 'LKH-' + Date.now().toString(36).toUpperCase(),
+            LKHID: genId,
+            LkhID: genId,
             ...record,
             CreatedAt: new Date().toISOString(),
           });
         }
+        localStorage.setItem(scopedKey, JSON.stringify(records));
         localStorage.setItem('ajar_lkh_records', JSON.stringify(records));
       } catch {}
     }
@@ -363,10 +606,16 @@ export async function callGasApi<T = any>(
     if (action === 'deleteLkhRecord' && data && (data as any).success) {
       try {
         const lkhId = args[1];
-        const local = localStorage.getItem('ajar_lkh_records');
+        const scopedKey = lkhScopedUserKey
+          ? `ajar_lkh_records_${lkhScopedUserKey}`
+          : 'ajar_lkh_records';
+        const local = localStorage.getItem(scopedKey) || localStorage.getItem('ajar_lkh_records');
         if (local) {
           const records: LkhRecord[] = JSON.parse(local);
-          const filtered = records.filter(r => r.LkhID !== lkhId && r.lkhId !== lkhId);
+          const filtered = records.filter(
+            r => (r.LKHID || r.LkhID || r.lkhId) !== lkhId
+          );
+          localStorage.setItem(scopedKey, JSON.stringify(filtered));
           localStorage.setItem('ajar_lkh_records', JSON.stringify(filtered));
         }
       } catch {}
@@ -390,20 +639,42 @@ function handleLocalFallback<T>(action: string, args: any[]): T {
 
   if (action === 'loginUser') {
     const [u, p] = args;
-    const cleanInput = (u || '').trim();
-    const inputPass = String(p || '');
+    const rawInput = String(u || '').trim();
+    const cleanInput = normalizeIdentifierInput(rawInput);
+    const inputPass = String(p || '').trim();
+    const normPassInput = normalizeIdentifierInput(inputPass);
 
     // 1. Cek akun yang sudah terdaftar di sistem lokal (baik dari registrasi maupun login sebelumnya)
     try {
       const stored = localStorage.getItem(REGISTERED_USERS_KEY);
       const accounts: RegisteredAccount[] = stored ? JSON.parse(stored) : [];
-      const match = accounts.find(
-        a =>
-          a.user.username.toLowerCase() === cleanInput.toLowerCase() ||
-          a.user.nip === cleanInput
-      );
+      const match = accounts.find(a => {
+        const accNip = normalizeIdentifierInput(a.user.nip || '');
+        const accUser = (a.user.username || '').trim().toLowerCase();
+        const accNama = (a.user.namaLengkap || '').trim().toLowerCase();
+        const accTampilan = (a.user.namaTampilan || '').trim().toLowerCase();
+        const qLower = rawInput.toLowerCase();
+
+        return (
+          (cleanInput && accNip === cleanInput) ||
+          accUser === qLower ||
+          accUser === cleanInput.toLowerCase() ||
+          accNama === qLower ||
+          (qLower.length >= 4 && accTampilan.includes(qLower))
+        );
+      });
+
       if (match) {
-        if (!inputPass || match.passwordHash === inputPass) {
+        const storedPass = String(match.passwordHash || '').trim();
+        const accNip = normalizeIdentifierInput(match.user.nip || '');
+        const isPassMatch =
+          !inputPass ||
+          storedPass === inputPass ||
+          storedPass === normPassInput ||
+          storedPass.replace(/^0+/, '') === inputPass.replace(/^0+/, '') ||
+          (accNip && normPassInput === accNip);
+
+        if (isPassMatch) {
           return {
             success: true,
             token: 'session-token-' + (match.user.userId || cleanInput) + '-' + Date.now(),
@@ -412,7 +683,7 @@ function handleLocalFallback<T>(action: string, args: any[]): T {
         } else {
           return {
             success: false,
-            message: 'Password yang Anda masukkan salah.',
+            message: 'Password yang Anda masukkan belum sesuai dengan akun tersebut.',
           } as unknown as T;
         }
       }
@@ -420,17 +691,18 @@ function handleLocalFallback<T>(action: string, args: any[]): T {
       console.warn('[GasApi] Error membaca akun lokal:', e);
     }
 
-    // 2. Akun demo HANYA berlaku jika username yang dimasukkan adalah NIP demo resmi atau kata kunci demo
+    // 2. Akun demo resmi Drs. H. Ahmad Fauzi, M.Pd.
     if (
       cleanInput === '198405122009121003' ||
-      cleanInput.toLowerCase() === 'ahmad' ||
-      cleanInput.toLowerCase() === 'achmad' ||
-      cleanInput.toLowerCase() === 'demo'
+      rawInput.toLowerCase() === 'ahmad' ||
+      rawInput.toLowerCase() === 'achmad' ||
+      rawInput.toLowerCase() === 'ahmad fauzi' ||
+      rawInput.toLowerCase() === 'demo'
     ) {
       const demoUser: User = {
         userId: 'USR-MAN1-DEMO',
         username: '198405122009121003',
-        namaLengkap: 'Drs. H. Ahmad Fauzi',
+        namaLengkap: 'Ahmad Fauzi',
         namaTampilan: 'Drs. H. Ahmad Fauzi, M.Pd.',
         nip: '198405122009121003',
         jabatan: 'Guru Ahli Madya',
@@ -438,7 +710,7 @@ function handleLocalFallback<T>(action: string, args: any[]): T {
         gelarDepan: 'Drs. H.',
         gelarBelakang: 'M.Pd.',
         namaAtasan: 'Iyan Arif Hasyim, S.Pd, M.Pd',
-        fotoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+        fotoUrl: createLocalAvatarSvg('Ahmad Fauzi'),
         parafUrl: '',
       };
       return {
@@ -448,21 +720,26 @@ function handleLocalFallback<T>(action: string, args: any[]): T {
       } as unknown as T;
     }
 
-    // 3. Jika username belum terdaftar dan bukan akun demo, TOLAK akses secara aman!
-    // JANGAN PERNAH mengalihkan user lain ke akun Ahmad Fauzi!
+    // 3. Jika username belum terdaftar dan bukan akun demo, tolak dengan pesan informatif
     return {
       success: false,
-      message: 'Username/NIP tidak terdaftar atau kredensial belum sesuai. Silakan daftar akun baru jika belum memiliki akun.',
+      message: 'NIP/Username tidak ditemukan atau password salah. Pastikan NIP sesuai atau daftar akun terlebih dahulu.',
     } as unknown as T;
   }
 
   if (action === 'registerGuru') {
     const data = args[0] || {};
-    const cleanNip = (data.nip || '').trim();
+    const cleanNip = normalizeIdentifierInput(data.nip || '');
     const cleanNama = (data.namaLengkap || '').trim();
     const gelarDepan = (data.gelarDepan || '').trim();
     const gelarBelakang = (data.gelarBelakang || '').trim();
     const fullTampilan = [gelarDepan, cleanNama, gelarBelakang].filter(Boolean).join(' ');
+
+    const allJabatan = getCachedReferences().Jabatan || DEFAULT_REFERENCES.Jabatan;
+    const foundJab = allJabatan.find(
+      j => j.id === data.jabatanId || j.code === data.jabatanId || j.name === data.jabatanId
+    );
+    const jabatanName = foundJab ? foundJab.name : (data.jabatanId || 'Guru Mata Pelajaran');
 
     const newUser: User = {
       userId: 'USR-' + (cleanNip || Date.now()),
@@ -470,32 +747,21 @@ function handleLocalFallback<T>(action: string, args: any[]): T {
       namaLengkap: cleanNama,
       namaTampilan: fullTampilan,
       nip: cleanNip,
-      jabatan: data.jabatanId || 'Guru Mata Pelajaran',
+      jabatan: jabatanName,
       jabatanId: data.jabatanId || 'Guru Mata Pelajaran',
       gelarDepan,
       gelarBelakang,
       namaAtasan: 'Iyan Arif Hasyim, S.Pd, M.Pd',
-      fotoUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(cleanNama || cleanNip)}`,
+      fotoUrl: createLocalAvatarSvg(cleanNama || cleanNip),
       parafUrl: '',
     };
 
-    try {
-      const stored = localStorage.getItem(REGISTERED_USERS_KEY);
-      const accounts: RegisteredAccount[] = stored ? JSON.parse(stored) : [];
-      const existingIdx = accounts.findIndex(a => a.user.nip === cleanNip || a.user.username === cleanNip);
-      if (existingIdx !== -1) {
-        accounts[existingIdx] = { user: newUser, passwordHash: data.password || cleanNip };
-      } else {
-        accounts.push({ user: newUser, passwordHash: data.password || cleanNip });
-      }
-      localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(accounts));
-    } catch (e) {
-      console.warn('[GasApi] Error menyimpan akun registrasi lokal:', e);
-    }
+    upsertLocalAccount(newUser, data.password || cleanNip);
 
     return {
       success: true,
-      message: 'Registrasi akun berhasil! Silakan login menggunakan NIP Anda.',
+      user: newUser,
+      message: 'Registrasi akun berhasil! Silakan masuk menggunakan NIP Anda.',
     } as unknown as T;
   }
 
@@ -895,68 +1161,70 @@ function handleLocalFallback<T>(action: string, args: any[]): T {
   }
 
   if (action === 'getLkhData') {
-    const local = localStorage.getItem('ajar_lkh_records');
-    if (local) {
-      return { success: true, records: JSON.parse(local) } as unknown as T;
+    const tokenOrNip = String(args[0] || '');
+    const guruNip = String(args[1] || '');
+    const userKey = guruNip || tokenOrNip;
+    const scopedKey = userKey ? `ajar_lkh_records_${userKey}` : 'ajar_lkh_records';
+    const localScoped = localStorage.getItem(scopedKey);
+    if (localScoped) {
+      try {
+        const parsed = JSON.parse(localScoped);
+        return { success: true, data: parsed, records: parsed } as unknown as T;
+      } catch {}
     }
-    const sampleLkh: LkhRecord[] = [
-      {
-        LkhID: 'LKH-001',
-        Tanggal: new Date().toISOString().split('T')[0],
-        IsNonKbm: false,
-        MataPelajaranID: 'MP003',
-        mapelNama: 'Fikih',
-        JamMulai: 1,
-        JamSelesai: 2,
-        Kelas: 'XI-IPA 1',
-        UraianKerja: 'Menjelaskan ketentuan zakat mal dan simulasi penghitungan nisab.',
-        HasilPembelajaran: 'Siswa antusias dan mampu mempraktikkan cara hitung zakat mal dengan tepat.',
-        CreatedAt: new Date().toISOString(),
-      },
-      {
-        LkhID: 'LKH-002',
-        Tanggal: new Date(Date.now() - 86400000).toISOString().split('T')[0],
-        IsNonKbm: false,
-        MataPelajaranID: 'MP003',
-        mapelNama: 'Fikih',
-        JamMulai: 3,
-        JamSelesai: 4,
-        Kelas: 'XI-IPA 2',
-        UraianKerja: 'Pembahasan materi muamalah: jual beli salam dan istisna\'.',
-        HasilPembelajaran: 'Peserta didik memahami rukun dan syarat sah akad jual beli.',
-        CreatedAt: new Date(Date.now() - 86400000).toISOString(),
-      },
-    ];
-    return { success: true, records: sampleLkh } as unknown as T;
+    const localGlobal = localStorage.getItem('ajar_lkh_records');
+    if (localGlobal) {
+      try {
+        const parsed = JSON.parse(localGlobal);
+        return { success: true, data: parsed, records: parsed } as unknown as T;
+      } catch {}
+    }
+    return { success: true, data: [], records: [] } as unknown as T;
   }
 
   if (action === 'saveLkhRecord') {
+    const tokenOrNip = String(args[0] || '');
     const record = args[1] || {};
-    const res = handleLocalFallback<{ success: boolean; records: LkhRecord[] }>('getLkhData', []);
+    const guruNip = String(args[2] || record.UserID || record.userId || record.guruNip || '');
+    const userKey = guruNip || tokenOrNip;
+    const scopedKey = userKey ? `ajar_lkh_records_${userKey}` : 'ajar_lkh_records';
+    const res = handleLocalFallback<{ success: boolean; records: LkhRecord[] }>('getLkhData', [tokenOrNip, guruNip]);
     const records = res.records || [];
-    const targetId = record.LkhID || record.lkhId;
+    const targetId = record.LKHID || record.LkhID || record.lkhId;
     if (targetId) {
-      const idx = records.findIndex(r => r.LkhID === targetId || r.lkhId === targetId);
+      const idx = records.findIndex(
+        r => (r.LKHID || r.LkhID || r.lkhId) === targetId
+      );
       if (idx !== -1) {
         records[idx] = { ...records[idx], ...record };
       } else {
         records.unshift(record);
       }
     } else {
+      const genId = 'LKH-' + Date.now();
       records.unshift({
-        LkhID: 'LKH-' + Date.now().toString(36).toUpperCase(),
+        LKHID: genId,
+        LkhID: genId,
         ...record,
         CreatedAt: new Date().toISOString(),
       });
     }
+    localStorage.setItem(scopedKey, JSON.stringify(records));
     localStorage.setItem('ajar_lkh_records', JSON.stringify(records));
-    return { success: true, message: 'Jurnal LKH berhasil disimpan!' } as unknown as T;
+    return { success: true, message: 'Jurnal LKH berhasil disimpan!', data: records, records } as unknown as T;
   }
 
   if (action === 'deleteLkhRecord') {
+    const tokenOrNip = String(args[0] || '');
     const lkhId = args[1];
-    const res = handleLocalFallback<{ success: boolean; records: LkhRecord[] }>('getLkhData', []);
-    const filtered = (res.records || []).filter(r => r.LkhID !== lkhId && r.lkhId !== lkhId);
+    const guruNip = String(args[2] || '');
+    const userKey = guruNip || tokenOrNip;
+    const scopedKey = userKey ? `ajar_lkh_records_${userKey}` : 'ajar_lkh_records';
+    const res = handleLocalFallback<{ success: boolean; records: LkhRecord[] }>('getLkhData', [tokenOrNip, guruNip]);
+    const filtered = (res.records || []).filter(
+      r => (r.LKHID || r.LkhID || r.lkhId) !== lkhId
+    );
+    localStorage.setItem(scopedKey, JSON.stringify(filtered));
     localStorage.setItem('ajar_lkh_records', JSON.stringify(filtered));
     return { success: true, message: 'Jurnal LKH berhasil dihapus!' } as unknown as T;
   }

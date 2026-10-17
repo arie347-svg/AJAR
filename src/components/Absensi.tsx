@@ -459,8 +459,32 @@ export const Absensi: React.FC<AbsensiProps> = ({
   const [saving, setSaving] = useState(false);
   const [isLocked, setIsLocked] = useState(false); // Terkunci jika pertemuan sudah berstatus Submitted
 
-  // 5. Muat Ringkasan Riwayat Pertemuan Tersimpan untuk Rombel Ini
+  // 5. Muat Ringkasan Riwayat Pertemuan Tersimpan untuk Rombel Ini (Optimistic Local-First + Background Sync)
   const loadRombelHistory = async (rombel: RombelItem) => {
+    const nipSuffix = currentUser?.nip ? `_${currentUser.nip}` : '';
+    const cacheKey = `ajar_absensi_${rombel.kelas}_${rombel.mapelId}_${autoSemester}${nipSuffix}`;
+
+    // Optimistic Read dari cache lokal terlebih dahulu (0ms delay)
+    try {
+      const cached =
+        localStorage.getItem(cacheKey) ||
+        localStorage.getItem(`ajar_absensi_${rombel.kelas}_${rombel.mapelId}_${autoSemester}`);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed?.datesMap) {
+          const localSaved: Record<number, string> = {};
+          Object.entries(parsed.datesMap).forEach(([k, dateVal]) => {
+            const num = parseInt(k, 10);
+            if (!isNaN(num) && dateVal) {
+              localSaved[num] = String(dateVal);
+            }
+          });
+          setSavedMeetings(localSaved);
+        }
+      }
+    } catch {}
+
+    // Sinkronisasi latar belakang dengan Google Apps Script
     try {
       const res = await callGasApi('getAbsensiData', [
         token,
@@ -478,40 +502,78 @@ export const Absensi: React.FC<AbsensiProps> = ({
             saved[num] = String(dateVal);
           }
         });
-        setSavedMeetings(saved);
-      } else {
-        // Cek juga dari cache lokal terisolasi per kelas + mapelId + semester + guruNip
-        const nipSuffix = currentUser?.nip ? `_${currentUser.nip}` : '';
-        const cacheKey = `ajar_absensi_${rombel.kelas}_${rombel.mapelId}_${autoSemester}${nipSuffix}`;
-        let cached = localStorage.getItem(cacheKey);
-        if (!cached) {
-          cached = localStorage.getItem(`ajar_absensi_${rombel.kelas}_${rombel.mapelId}_${autoSemester}`);
-        }
-        if (cached) {
-          try {
-            const parsed = JSON.parse(cached);
-            const saved: Record<number, string> = {};
-            if (parsed.datesMap) {
-              Object.entries(parsed.datesMap).forEach(([k, dateVal]) => {
-                const num = parseInt(k, 10);
-                if (!isNaN(num) && dateVal) {
-                  saved[num] = String(dateVal);
-                }
-              });
-              setSavedMeetings(saved);
-            }
-          } catch {}
-        }
+        setSavedMeetings(prev => ({ ...prev, ...saved }));
       }
     } catch {}
   };
 
-  // 6. Muat Data Presensi Siswa Ketika Pertemuan Dipilih (Multi-Tier Robust Data Fetching)
-  // Menjamin siswa SELALU muncul meskipun respon backend berbeda struktur atau hanya membawa absensiMap
+  // 6. Muat Data Presensi Siswa Ketika Pertemuan Dipilih (Optimistic Local-First + Multi-Tier Robust Sync)
   const loadAbsensiData = async (rombel: RombelItem, meet: number) => {
-    setLoading(true);
+    const pKey = String(meet);
+    const nipSuffix = currentUser?.nip ? `_${currentUser.nip}` : '';
+    const cacheKey = `ajar_absensi_${rombel.kelas}_${rombel.mapelId}_${autoSemester}${nipSuffix}`;
+
+    let hasOptimisticStudents = false;
+    let localAbsensiCache: any = null;
+
     try {
-      // Step A: Panggil endpoint getAbsensiData
+      const rawAbsCache =
+        localStorage.getItem(cacheKey) ||
+        localStorage.getItem(`ajar_absensi_${rombel.kelas}_${rombel.mapelId}_${autoSemester}`);
+      if (rawAbsCache) {
+        localAbsensiCache = JSON.parse(rawAbsCache);
+      }
+    } catch {}
+
+    // Optimistic UI: Tampilkan daftar siswa & status presensi secara instan dari cache lokal jika tersedia
+    try {
+      const cachedSiswaRaw = localStorage.getItem('ajar_siswa_' + rombel.kelas);
+      if (cachedSiswaRaw) {
+        const parsedSiswa = JSON.parse(cachedSiswaRaw);
+        if (Array.isArray(parsedSiswa) && parsedSiswa.length > 0) {
+          const optimisticStudents: SiswaItem[] = parsedSiswa.map(s => normalizeSiswaItem(s, rombel.kelas));
+          setSiswaList(optimisticStudents);
+          hasOptimisticStudents = true;
+
+          const optimisticMap: Record<string, 'H' | 'I' | 'S' | 'A'> = {};
+          let hasLocalSaved = false;
+
+          optimisticStudents.forEach(s => {
+            const sId = s.SiswaID || s.siswaId || '';
+            const nis = s.NIS || s.nis || '';
+            const existing =
+              (localAbsensiCache?.absensiMap?.[sId]?.[pKey] as ('H' | 'I' | 'S' | 'A' | undefined)) ||
+              (nis ? (localAbsensiCache?.absensiMap?.[nis]?.[pKey] as ('H' | 'I' | 'S' | 'A' | undefined)) : undefined);
+            if (existing) {
+              hasLocalSaved = true;
+              optimisticMap[sId] = existing;
+            } else {
+              optimisticMap[sId] = 'H';
+            }
+          });
+
+          setAttendanceMap(optimisticMap);
+
+          const cachedDate = localAbsensiCache?.datesMap?.[pKey] || savedMeetings[meet];
+          if (cachedDate) {
+            setTanggal(cachedDate);
+            hasLocalSaved = true;
+          } else {
+            setTanggal(new Date().toISOString().split('T')[0]);
+          }
+
+          setIsLocked(hasLocalSaved);
+          setIsDirty(!hasLocalSaved);
+        }
+      }
+    } catch {}
+
+    if (!hasOptimisticStudents) {
+      setLoading(true);
+    }
+
+    try {
+      // Step A: Panggil endpoint getAbsensiData di latar belakang
       const res = await callGasApi('getAbsensiData', [
         token,
         rombel.kelas,
@@ -533,7 +595,7 @@ export const Absensi: React.FC<AbsensiProps> = ({
         else if (Array.isArray(res) && res.length > 0) rawStudents = res;
       }
 
-      // Step C: Fallback Tier 1 — Jika tidak ada siswa dalam respons getAbsensiData, ambil dari cache lokal
+      // Step C: Fallback Tier 1 — Ambil dari cache lokal jika respons GAS tidak menyertakan array siswa
       if (rawStudents.length === 0) {
         const cached = localStorage.getItem('ajar_siswa_' + rombel.kelas);
         if (cached) {
@@ -569,8 +631,7 @@ export const Absensi: React.FC<AbsensiProps> = ({
         setClassStudentCounts(prev => ({ ...prev, [rombel.kelas]: normalizedStudents.length }));
       }
 
-      // Step F: Petakan status absensi siswa
-      const pKey = String(meet);
+      // Step F: Petakan status absensi siswa (gabungkan cloud + cache lokal)
       const curMap: Record<string, 'H' | 'I' | 'S' | 'A'> = {};
       let hasSavedData = false;
 
@@ -579,7 +640,9 @@ export const Absensi: React.FC<AbsensiProps> = ({
         const nis = s.NIS || s.nis || '';
         const existing =
           (res?.absensiMap?.[sId]?.[pKey] as ('H' | 'I' | 'S' | 'A' | undefined)) ||
-          (nis ? (res?.absensiMap?.[nis]?.[pKey] as ('H' | 'I' | 'S' | 'A' | undefined)) : undefined);
+          (nis ? (res?.absensiMap?.[nis]?.[pKey] as ('H' | 'I' | 'S' | 'A' | undefined)) : undefined) ||
+          (localAbsensiCache?.absensiMap?.[sId]?.[pKey] as ('H' | 'I' | 'S' | 'A' | undefined)) ||
+          (nis ? (localAbsensiCache?.absensiMap?.[nis]?.[pKey] as ('H' | 'I' | 'S' | 'A' | undefined)) : undefined);
 
         if (existing) {
           hasSavedData = true;
@@ -591,24 +654,22 @@ export const Absensi: React.FC<AbsensiProps> = ({
 
       setAttendanceMap(curMap);
 
-      if (res?.datesMap?.[pKey]) {
-        setTanggal(res.datesMap[pKey]);
+      const resolvedDate = res?.datesMap?.[pKey] || localAbsensiCache?.datesMap?.[pKey] || savedMeetings[meet];
+      if (resolvedDate) {
+        setTanggal(resolvedDate);
         hasSavedData = true;
-        setSavedMeetings(prev => ({ ...prev, [meet]: res.datesMap[pKey] }));
-      } else if (savedMeetings[meet]) {
-        setTanggal(savedMeetings[meet]);
-        hasSavedData = true;
+        setSavedMeetings(prev => ({ ...prev, [meet]: resolvedDate }));
       } else {
-        // Jika belum pernah diisi: gunakan tanggal hari ini
         setTanggal(new Date().toISOString().split('T')[0]);
         hasSavedData = false;
       }
 
-      // Kunci pertemuan otomatis jika data sudah pernah tersimpan sebelumnya (status Submitted)
       setIsLocked(hasSavedData);
-      setIsDirty(!hasSavedData); // Siap simpan jika baru
+      setIsDirty(!hasSavedData);
     } catch {
-      showToast('Gagal memuat data presensi.', 'error');
+      if (!hasOptimisticStudents) {
+        showToast('Gagal memuat data presensi.', 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -679,7 +740,7 @@ export const Absensi: React.FC<AbsensiProps> = ({
     }
   };
 
-  // Handler ubah status kehadiran siswa (H / I / S / A)
+  // Handler ubah status kehadiran siswa (H / I / S / A) — Optimistic UI Feedback Instan
   const handleStatusChange = (siswaId: string, status: 'H' | 'I' | 'S' | 'A') => {
     if (isLocked) return;
     setIsDirty(true);
@@ -719,53 +780,78 @@ export const Absensi: React.FC<AbsensiProps> = ({
   // Validasi tombol simpan aktif: hanya ketika pertemuan dipilih, ada siswa, ada perubahan, dan tidak terkunci
   const canSave = Boolean(pertemuan) && isDirty && !isLocked && !saving && siswaList.length > 0;
 
-  // Handler Simpan Data Presensi dengan Isolasi Data Ketat
+  // Handler Simpan Data Presensi dengan Optimistic UI Update & Background Cloud Sync
   const handleSave = async () => {
     if (!selectedRombel || !pertemuan || !canSave) return;
-    setSaving(true);
+
+    const targetRombel = selectedRombel;
+    const targetPertemuan = pertemuan;
+    const targetTanggal = tanggal;
+    const snapshotAttendance = { ...attendanceMap };
+    const prevSavedMeetings = { ...savedMeetings };
+
+    const nipSuffix = currentUser?.nip ? `_${currentUser.nip}` : '';
+    const cacheKey = `ajar_absensi_${targetRombel.kelas}_${targetRombel.mapelId}_${autoSemester}${nipSuffix}`;
+    const prevCacheRaw = localStorage.getItem(cacheKey);
+
+    // 1. OPTIMISTIC UPDATE INSTAN (0ms): Langsung kunci form, perbarui badge pertemuan, dan simpan ke cache lokal
+    setIsDirty(false);
+    setIsLocked(true);
+    setSavedMeetings(prev => ({ ...prev, [targetPertemuan]: targetTanggal }));
+
     try {
-      const payload = {
-        mapelId: selectedRombel.mapelId,
-        mapelNama: selectedRombel.mapelNama,
-        kelas: selectedRombel.kelas,
-        pertemuan: pertemuan,
-        tanggal: tanggal,
-        semester: autoSemester,
-        tahunAjaran: tahunAjaran,
-        guruNip: currentUser?.nip || '',
-        userId: currentUser?.userId || '',
-        records: attendanceMap,
-      };
-
-      const res = await callGasApi('saveAbsensiData', [token, payload]);
-      if (res && res.success) {
-        showToast(`Presensi pertemuan ke-${pertemuan} berhasil disimpan!`, 'success');
-        setIsDirty(false);
-        setIsLocked(true); // Kunci kembali ke status Submitted setelah disimpan
-        setSavedMeetings(prev => ({ ...prev, [pertemuan]: tanggal }));
-
-        // Simpan juga ke cache lokal per kelas + mapelId + semester + guruNip untuk isolasi 100%
-        const nipSuffix = currentUser?.nip ? `_${currentUser.nip}` : '';
-        const cacheKey = `ajar_absensi_${selectedRombel.kelas}_${selectedRombel.mapelId}_${autoSemester}${nipSuffix}`;
-        let cachedData = { absensiMap: {} as any, datesMap: {} as any };
+      let cachedData = { absensiMap: {} as any, datesMap: {} as any };
+      if (prevCacheRaw) {
         try {
-          const raw = localStorage.getItem(cacheKey);
-          if (raw) cachedData = JSON.parse(raw);
+          cachedData = JSON.parse(prevCacheRaw);
         } catch {}
-        const pKey = String(pertemuan);
-        cachedData.datesMap[pKey] = tanggal;
-        Object.entries(attendanceMap).forEach(([sId, st]) => {
-          if (!cachedData.absensiMap[sId]) cachedData.absensiMap[sId] = {};
-          cachedData.absensiMap[sId][pKey] = st;
-        });
-        localStorage.setItem(cacheKey, JSON.stringify(cachedData));
-      } else {
-        showToast(res?.message || 'Gagal menyimpan presensi.', 'error');
+      }
+      if (!cachedData.datesMap) cachedData.datesMap = {};
+      if (!cachedData.absensiMap) cachedData.absensiMap = {};
+
+      const pKey = String(targetPertemuan);
+      cachedData.datesMap[pKey] = targetTanggal;
+      Object.entries(snapshotAttendance).forEach(([sId, st]) => {
+        if (!cachedData.absensiMap[sId]) cachedData.absensiMap[sId] = {};
+        cachedData.absensiMap[sId][pKey] = st;
+      });
+      localStorage.setItem(cacheKey, JSON.stringify(cachedData));
+    } catch {}
+
+    showToast(`Presensi Pertemuan ${targetPertemuan} tersimpan! Menyinkronkan ke spreadsheet...`, 'success');
+
+    // 2. SINKRONISASI LATAR BELAKANG KE GOOGLE APPS SCRIPT
+    const payload = {
+      mapelId: targetRombel.mapelId,
+      mapelNama: targetRombel.mapelNama,
+      kelas: targetRombel.kelas,
+      pertemuan: targetPertemuan,
+      tanggal: targetTanggal,
+      semester: autoSemester,
+      tahunAjaran: tahunAjaran,
+      guruNip: currentUser?.nip || '',
+      userId: currentUser?.userId || '',
+      records: snapshotAttendance,
+    };
+
+    try {
+      const res = await callGasApi('saveAbsensiData', [token, payload]);
+      if (!res || !res.success) {
+        // Rollback status kunci jika server menolak penyimpanan
+        setIsLocked(false);
+        setIsDirty(true);
+        setSavedMeetings(prevSavedMeetings);
+        if (prevCacheRaw !== null) {
+          localStorage.setItem(cacheKey, prevCacheRaw);
+        }
+        showToast(res?.message || 'Gagal menyinkronkan presensi ke server. Silakan coba simpan ulang.', 'error');
       }
     } catch {
-      showToast('Gagal menghubungi server.', 'error');
-    } finally {
-      setSaving(false);
+      // Rollback status kunci agar guru tahu perlu sinkron ulang
+      setIsLocked(false);
+      setIsDirty(true);
+      setSavedMeetings(prevSavedMeetings);
+      showToast('Koneksi terputus saat sinkronisasi. Data tetap aman di perangkat, silakan klik Simpan kembali.', 'warning');
     }
   };
 

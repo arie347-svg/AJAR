@@ -136,16 +136,20 @@ export interface NilaiDataResponse {
 
 export interface LkhRecord {
   _rowIndex?: number;
+  LKHID?: string;
   LkhID?: string;
   lkhId?: string;
   UserID?: string;
+  userId?: string;
+  TahunAjaran?: string;
+  tahunAjaran?: string;
   Tanggal?: string;
   tanggal?: string;
-  IsNonKbm?: boolean;
-  isNonKbm?: boolean;
   MataPelajaranID?: string;
   mapelId?: string;
   mapelNama?: string;
+  JamKe?: string;
+  jamKe?: string;
   JamMulai?: number | string;
   jamMulai?: number | string;
   JamSelesai?: number | string;
@@ -153,12 +157,26 @@ export interface LkhRecord {
   Kelas?: string;
   kelas?: string;
   UraianKerja?: string;
+  uraianKerja?: string;
   uraian?: string;
-  HasilPembelajaran?: string;
+  Hasil?: string;
   hasil?: string;
+  HasilPembelajaran?: string;
+  HariNonKBM?: boolean | string;
+  hariNonKBM?: boolean | string;
+  hariNonKbm?: boolean | string;
+  IsNonKbm?: boolean;
+  isNonKbm?: boolean;
+  ParafGuruFileID?: string;
+  parafGuruFileId?: string;
+  ParafGuruURL?: string;
+  parafGuruUrl?: string;
   ParafUrl?: string;
   parafUrl?: string;
   CreatedAt?: string;
+  createdAt?: string;
+  UpdatedAt?: string;
+  updatedAt?: string;
 }
 
 export interface LkhInitialData {
@@ -169,3 +187,4 @@ export interface LkhInitialData {
   listHasil: string[];
   userParafUrl?: string;
 }
+

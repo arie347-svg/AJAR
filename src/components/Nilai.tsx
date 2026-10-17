@@ -504,9 +504,62 @@ export const Nilai: React.FC<NilaiProps> = ({
     } catch {}
   };
 
-  // Muat Data Nilai Siswa Ketika Komponen Dipilih
+  // Muat Data Nilai Siswa Ketika Komponen Dipilih (Optimistic Local-First + Background Sync)
   const loadNilaiData = async (rombel: RombelItem, targetKey: string) => {
-    setLoading(true);
+    const nipSuffix = currentUser?.nip ? `_${currentUser.nip}` : '';
+    const cacheKey = `ajar_nilai_${rombel.kelas}_${rombel.mapelId}_${autoSemester}${nipSuffix}`;
+    let localCachedData: any = null;
+    try {
+      const rawLocal = localStorage.getItem(cacheKey);
+      if (rawLocal) localCachedData = JSON.parse(rawLocal);
+    } catch {}
+
+    let hasOptimisticStudents = false;
+
+    // Optimistic UI: Tampilkan daftar siswa & nilai secara instan dari cache lokal (0ms delay)
+    try {
+      const cachedSiswaRaw = localStorage.getItem('ajar_siswa_' + rombel.kelas);
+      if (cachedSiswaRaw) {
+        const parsedSiswa = JSON.parse(cachedSiswaRaw);
+        if (Array.isArray(parsedSiswa) && parsedSiswa.length > 0) {
+          const optimisticStudents = parsedSiswa.map(s => normalizeSiswaItem(s, rombel.kelas));
+          setSiswaList(optimisticStudents);
+          hasOptimisticStudents = true;
+
+          const optimisticScores: Record<string, number | ''> = {};
+          let hasLocalSaved = false;
+
+          optimisticStudents.forEach(s => {
+            const sId = s.SiswaID || s.siswaId || '';
+            const nis = s.NIS || s.nis || '';
+            let val: any = undefined;
+            if (targetKey === 'pas') {
+              val = localCachedData?.pasMap?.[sId] ?? localCachedData?.pasMap?.[nis];
+            } else {
+              val =
+                localCachedData?.aktivitasMap?.[sId]?.[targetKey] ??
+                localCachedData?.aktivitasMap?.[nis]?.[targetKey];
+            }
+
+            if (val !== undefined && val !== null && val !== '') {
+              hasLocalSaved = true;
+              optimisticScores[sId] = Number(val);
+            } else {
+              optimisticScores[sId] = '';
+            }
+          });
+
+          setScoresMap(optimisticScores);
+          setIsLocked(hasLocalSaved);
+          setIsDirty(!hasLocalSaved);
+        }
+      }
+    } catch {}
+
+    if (!hasOptimisticStudents) {
+      setLoading(true);
+    }
+
     try {
       const res = await callGasApi('getNilaiData', [
         token,
@@ -558,15 +611,6 @@ export const Nilai: React.FC<NilaiProps> = ({
       const loadedScores: Record<string, number | ''> = {};
       let hasSavedData = false;
 
-      // Cek cache lokal juga
-      const nipSuffix = currentUser?.nip ? `_${currentUser.nip}` : '';
-      const cacheKey = `ajar_nilai_${rombel.kelas}_${rombel.mapelId}_${autoSemester}${nipSuffix}`;
-      let localCachedData: any = null;
-      try {
-        const rawLocal = localStorage.getItem(cacheKey);
-        if (rawLocal) localCachedData = JSON.parse(rawLocal);
-      } catch {}
-
       normalizedStudents.forEach(s => {
         const sId = s.SiswaID || s.siswaId || '';
         const nis = s.NIS || s.nis || '';
@@ -593,7 +637,9 @@ export const Nilai: React.FC<NilaiProps> = ({
       setIsLocked(hasSavedData);
       setIsDirty(!hasSavedData);
     } catch {
-      showToast('Gagal memuat data nilai.', 'error');
+      if (!hasOptimisticStudents) {
+        showToast('Gagal memuat data nilai.', 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -651,7 +697,7 @@ export const Nilai: React.FC<NilaiProps> = ({
     }
   };
 
-  // Handler ubah nilai satu siswa
+  // Handler ubah nilai satu siswa — Optimistic UI Feedback Instan
   const handleScoreChange = (siswaId: string, valStr: string) => {
     if (isLocked) return;
     setIsDirty(true);
@@ -711,57 +757,77 @@ export const Nilai: React.FC<NilaiProps> = ({
 
   const canSave = isDirty && !saving && !isLocked && selectedTarget !== null;
 
-  // Handler simpan nilai ke backend
+  // Handler simpan nilai dengan Optimistic UI Update & Background Cloud Sync
   const handleSave = async () => {
     if (!selectedRombel || !selectedTarget || !canSave) return;
-    setSaving(true);
+
+    const targetRombel = selectedRombel;
+    const targetKomponen = selectedTarget;
+    const snapshotScores = { ...scoresMap };
+    const prevSavedTargets = { ...savedTargets };
+
+    const nipSuffix = currentUser?.nip ? `_${currentUser.nip}` : '';
+    const cacheKey = `ajar_nilai_${targetRombel.kelas}_${targetRombel.mapelId}_${autoSemester}${nipSuffix}`;
+    const prevCacheRaw = localStorage.getItem(cacheKey);
+
+    // 1. OPTIMISTIC UPDATE INSTAN (0ms): Langsung kunci form, tandai komponen tersimpan, dan tulis ke cache lokal
+    setIsDirty(false);
+    setIsLocked(true);
+    setSavedTargets(prev => ({ ...prev, [targetKomponen]: true }));
 
     try {
-      const payload = {
-        kelas: selectedRombel.kelas,
-        mapelId: selectedRombel.mapelId,
-        semester: autoSemester,
-        target: selectedTarget,
-        scores: scoresMap,
-        guruNip: currentUser?.nip || '',
+      let localData = {
+        aktivitasMap: {} as any,
+        pasMap: {} as any,
       };
-
-      const res = await callGasApi('saveNilaiData', [token, payload]);
-      if (res && res.success) {
-        showToast('Nilai peserta didik berhasil disimpan!', 'success');
-        setIsDirty(false);
-        setIsLocked(true);
-        setSavedTargets(prev => ({ ...prev, [selectedTarget]: true }));
-
-        // Simpan ke cache lokal
-        const nipSuffix = currentUser?.nip ? `_${currentUser.nip}` : '';
-        const cacheKey = `ajar_nilai_${selectedRombel.kelas}_${selectedRombel.mapelId}_${autoSemester}${nipSuffix}`;
-        let localData = {
-          aktivitasMap: {} as any,
-          pasMap: {} as any,
-        };
+      if (prevCacheRaw) {
         try {
-          const raw = localStorage.getItem(cacheKey);
-          if (raw) localData = JSON.parse(raw);
+          localData = JSON.parse(prevCacheRaw);
         } catch {}
+      }
+      if (!localData.aktivitasMap) localData.aktivitasMap = {};
+      if (!localData.pasMap) localData.pasMap = {};
 
-        if (selectedTarget === 'pas') {
-          localData.pasMap = { ...(localData.pasMap || {}), ...scoresMap };
-        } else {
-          if (!localData.aktivitasMap) localData.aktivitasMap = {};
-          Object.entries(scoresMap).forEach(([sId, val]) => {
-            if (!localData.aktivitasMap[sId]) localData.aktivitasMap[sId] = {};
-            localData.aktivitasMap[sId][selectedTarget] = val;
-          });
-        }
-        localStorage.setItem(cacheKey, JSON.stringify(localData));
+      if (targetKomponen === 'pas') {
+        localData.pasMap = { ...localData.pasMap, ...snapshotScores };
       } else {
-        showToast(res?.message || 'Gagal menyimpan nilai.', 'error');
+        Object.entries(snapshotScores).forEach(([sId, val]) => {
+          if (!localData.aktivitasMap[sId]) localData.aktivitasMap[sId] = {};
+          localData.aktivitasMap[sId][targetKomponen] = val;
+        });
+      }
+      localStorage.setItem(cacheKey, JSON.stringify(localData));
+    } catch {}
+
+    showToast('Nilai peserta didik tersimpan! Menyinkronkan ke spreadsheet...', 'success');
+
+    // 2. SINKRONISASI LATAR BELAKANG KE GOOGLE APPS SCRIPT
+    const payload = {
+      kelas: targetRombel.kelas,
+      mapelId: targetRombel.mapelId,
+      semester: autoSemester,
+      target: targetKomponen,
+      scores: snapshotScores,
+      guruNip: currentUser?.nip || '',
+    };
+
+    try {
+      const res = await callGasApi('saveNilaiData', [token, payload]);
+      if (!res || !res.success) {
+        // Rollback status kunci jika server menolak penyimpanan
+        setIsLocked(false);
+        setIsDirty(true);
+        setSavedTargets(prevSavedTargets);
+        if (prevCacheRaw !== null) {
+          localStorage.setItem(cacheKey, prevCacheRaw);
+        }
+        showToast(res?.message || 'Gagal menyinkronkan nilai ke server. Silakan coba simpan ulang.', 'error');
       }
     } catch {
-      showToast('Gagal menghubungi server.', 'error');
-    } finally {
-      setSaving(false);
+      setIsLocked(false);
+      setIsDirty(true);
+      setSavedTargets(prevSavedTargets);
+      showToast('Koneksi terputus saat sinkronisasi. Data tetap aman di perangkat, silakan klik Simpan kembali.', 'warning');
     }
   };
 

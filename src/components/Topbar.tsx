@@ -29,6 +29,8 @@ export const Topbar: React.FC<TopbarProps> = ({ activePage, onNavigate, onLogout
   const isProfil = activePage === 'profil';
   const isMasterSiswa = activePage === 'master-siswa';
   const isAbsensi = activePage === 'absensi';
+  const isNilai = activePage === 'nilai';
+  const isLkh = activePage === 'lkh';
   const isSoftTheme = true;
 
   return (
@@ -37,7 +39,7 @@ export const Topbar: React.FC<TopbarProps> = ({ activePage, onNavigate, onLogout
         className="safe-top-padding px-4 pb-3 flex items-center justify-between sticky top-0 z-30 transition-colors select-none bg-[#EBF0F8]/95 backdrop-blur-xl border-b border-[#d4deeb] shadow-xs text-slate-800"
       >
         <div className="flex items-center space-x-2.5 min-w-0 pr-2">
-          {!isDashboard && !isMasterAjar && !isProfil && !isMasterSiswa && !isAbsensi && (
+          {!isDashboard && !isMasterAjar && !isProfil && !isMasterSiswa && !isAbsensi && !isNilai && !isLkh && (
             <button
               onClick={() => onNavigate('dashboard')}
               className="flex items-center justify-center p-2 rounded-xl neu-btn text-slate-700 active:scale-95 transition-all shadow-xs cursor-pointer shrink-0"

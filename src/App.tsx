@@ -485,6 +485,7 @@ export function App() {
                   token={token}
                   currentUser={currentUser}
                   pengajaranList={pengajaranList}
+                  references={references}
                   showToast={showToast}
                   onNavigate={handleNavigate}
                 />
@@ -495,6 +496,8 @@ export function App() {
                   token={token}
                   currentUser={currentUser}
                   pengajaranList={pengajaranList}
+                  masterAjarData={masterAjarData}
+                  references={references}
                   showToast={showToast}
                 />
               )}
