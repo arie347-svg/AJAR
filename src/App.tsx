@@ -251,8 +251,12 @@ export function App() {
     } catch {}
   };
 
+  // State pembuka kunci menu Master Ajar secara instan saat verifikasi berhasil
+  const [isMasterAjarUnlockedLocally, setIsMasterAjarUnlockedLocally] = useState<boolean>(false);
+
   // Deteksi apakah konfigurasi Master Ajar telah diselesaikan oleh guru
   const isMasterAjarComplete = useMemo(() => {
+    if (isMasterAjarUnlockedLocally) return true;
     if (!currentUser) return true;
     if (!masterAjarData || !masterAjarData.success) return true;
 
@@ -284,7 +288,7 @@ export function App() {
     }
 
     return false;
-  }, [currentUser, masterAjarData]);
+  }, [currentUser, masterAjarData, isMasterAjarUnlockedLocally]);
 
   // Arahkan ke Master Ajar HANYA jika data telah selesai dimuat dan terbukti belum memiliki konfigurasi
   useEffect(() => {
@@ -319,6 +323,7 @@ export function App() {
   };
 
   const handleLogout = () => {
+    setIsMasterAjarUnlockedLocally(false);
     setCurrentUser(null);
     setToken('');
     localStorage.removeItem('user');
@@ -446,6 +451,10 @@ export function App() {
                   onRefresh={loadMasterAjar}
                   showToast={showToast}
                   currentUser={currentUser}
+                  onVerified={() => {
+                    setIsMasterAjarUnlockedLocally(true);
+                    loadMasterAjar();
+                  }}
                 />
               )}
 
