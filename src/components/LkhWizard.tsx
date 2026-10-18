@@ -20,6 +20,7 @@ import {
   X,
   FileText,
   Layers,
+  RotateCcw,
 } from 'lucide-react';
 import { LkhRecord, PengajaranItem, ReferencesMap, User } from '../types';
 import { callGasApi, DEFAULT_REFERENCES } from '../services/gasApi';
@@ -481,6 +482,25 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
   // Uraian Aktivitas & Hasil
   const [uraian, setUraian] = useState<string>('');
   const [hasil, setHasil] = useState<string>('');
+
+  // Reset seluruh isian formulir aktif jika batal atau ingin membersihkan formulir
+  const handleResetForm = () => {
+    setWizardStep(1);
+    setIsNonKbm(false);
+    setTanggal(getTodayIso());
+    const now = new Date();
+    setCalendarViewDate({ year: now.getFullYear(), month: now.getMonth() });
+    setMapelId('');
+    setMapelNama('');
+    setKelas('');
+    setJamMulai('');
+    setJamSelesai('');
+    setUraian('');
+    setHasil('');
+    setActiveModal(null);
+    setEditingRecordId(null);
+    showToast('Formulir jurnal berhasil dibersihkan.', 'info');
+  };
 
   // State Rekap LKH & Filter (Data 09_LKH sesuai UserID guru terkait)
   const [historyRecords, setHistoryRecords] = useState<LkhRecord[]>([]);
@@ -1290,7 +1310,7 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
       {/* ========================================================================= */}
       {activeTab === 'form' ? (
         <div className="flex-1 min-h-0 flex flex-col gap-2 overflow-hidden">
-          {/* PENANDA LANGKAH GARIS-TITIK SAJA */}
+          {/* PENANDA LANGKAH GARIS-TITIK SAJA DENGAN TOMBOL BERSIHKAN DI SAMPINGNYA */}
           <div className="shrink-0 py-1.5 px-4 flex items-center justify-center">
             <div className="flex items-center gap-1.5">
               {([1, 2, 3, 4] as const).map((stepNum, idx) => {
@@ -1321,6 +1341,17 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
                 );
               })}
             </div>
+
+            {/* Tombol Bersihkan di Samping Garis Titik Penanda Step */}
+            <button
+              type="button"
+              onClick={handleResetForm}
+              title="Bersihkan isian formulir saat ini"
+              aria-label="Bersihkan isian formulir"
+              className="ml-3 sm:ml-4 w-6 h-6 sm:w-7 sm:h-7 rounded-full neu-flat active:neu-pressed text-slate-400 hover:text-rose-600 border border-white/80 flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-90 group"
+            >
+              <RotateCcw className="w-3 h-3 sm:w-3.5 sm:h-3.5 transition-transform duration-300 group-hover:-rotate-90 group-active:-rotate-180" />
+            </button>
           </div>
 
           {/* KARTU UTAMA WIZARD */}

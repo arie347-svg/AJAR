@@ -58,7 +58,7 @@ export function App() {
 
   const [masterAjarData, setMasterAjarData] = useState<MasterAjarData>({
     success: true,
-    waliKelas: 'Bukan Wali Kelas',
+    waliKelas: '',
     mapelUtamaId: '',
     mapelUtama: null,
     mapelTambahan: [],
@@ -273,9 +273,13 @@ export function App() {
         (masterAjarData.mapelUtama?.kelases?.length || 0) > 0)
     );
 
-    // Guru yang sudah memiliki data mengajar atau sudah dikonfigurasi dianggap LENGKAP.
-    // Tugas Wali Kelas opsional karena mayoritas guru berstatus 'Bukan Wali Kelas'.
-    if (hasPengajaran || isTaFlagged) {
+    // Memiliki penentuan wali kelas (pilih kelas tertentu atau Bukan Wali Kelas)
+    const hasWaliSelection = Boolean(
+      masterAjarData.waliKelas && masterAjarData.waliKelas.trim() !== ''
+    );
+
+    // Guru yang sudah memiliki data mengajar dan telah menentukan status wali kelas dianggap LENGKAP.
+    if ((hasPengajaran && hasWaliSelection) || isTaFlagged) {
       return true;
     }
 

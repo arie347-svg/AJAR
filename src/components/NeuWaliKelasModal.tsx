@@ -85,7 +85,7 @@ export const NeuWaliKelasModal: React.FC<NeuWaliKelasModalProps> = ({
     });
   }, [classesByGrade, activeGrade, searchQuery]);
 
-  const isBukanWaliSelected = currentWaliKelas === 'Bukan Wali Kelas' || !currentWaliKelas;
+  const isBukanWaliSelected = currentWaliKelas === 'Bukan Wali Kelas';
 
   if (!isOpen) return null;
 

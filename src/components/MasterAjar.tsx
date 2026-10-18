@@ -48,7 +48,7 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
   currentUser,
 }) => {
   // Snapshot data awal untuk mendeteksi perubahan
-  const initialWaliKelas = data.waliKelas || 'Bukan Wali Kelas';
+  const initialWaliKelas = data.waliKelas || '';
   const initialMapelUtamaId =
     data.mapelUtamaId || (data.mapelUtama?.mapelId ?? '');
   const initialUtamaKelases = useMemo(
@@ -65,6 +65,13 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
       })),
     [data.mapelTambahan]
   );
+  const initialConfirmedNoTambahan = useMemo(() => {
+    return Boolean(
+      data.mapelUtamaId ||
+        (data.mapelTambahan && data.mapelTambahan.length > 0) ||
+        (data.pengajaran && data.pengajaran.length > 0)
+    );
+  }, [data.mapelUtamaId, data.mapelTambahan, data.pengajaran]);
 
   // State Pengajaran
   const [waliKelas, setWaliKelas] = useState(initialWaliKelas);
@@ -80,6 +87,9 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
   // Mapel Tambahan
   const [mapelTambahan, setMapelTambahan] = useState<MapelGroup[]>(
     data.mapelTambahan || []
+  );
+  const [hasConfirmedNoTambahan, setHasConfirmedNoTambahan] = useState(
+    initialConfirmedNoTambahan
   );
   // Indeks paket tambahan yang sedang diedit (null jika semua terkunci)
   const [editingTambahanIdx, setEditingTambahanIdx] = useState<number | null>(null);
@@ -113,12 +123,19 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
 
   // Sinkronisasi data saat props data berubah dari server
   useEffect(() => {
-    setWaliKelas(data.waliKelas || 'Bukan Wali Kelas');
+    setWaliKelas(data.waliKelas || '');
     const uId = data.mapelUtamaId || (data.mapelUtama?.mapelId ?? '');
     setMapelUtamaId(uId);
     setUtamaKelases(data.mapelUtama?.kelases || []);
     setIsUtamaLocked(Boolean(uId));
     setMapelTambahan(data.mapelTambahan || []);
+    setHasConfirmedNoTambahan(
+      Boolean(
+        data.mapelUtamaId ||
+          (data.mapelTambahan && data.mapelTambahan.length > 0) ||
+          (data.pengajaran && data.pengajaran.length > 0)
+      )
+    );
     setIsWaliEditing(false);
     setEditingTambahanIdx(null);
   }, [data]);
@@ -286,6 +303,13 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
       showToast('Pilih minimal 1 kelas untuk Mata Pelajaran Utama!', 'warning');
       return;
     }
+    if (!waliKelas || waliKelas.trim() === '') {
+      showToast(
+        'Tentukan penugasan Wali Kelas terlebih dahulu (pilih rombel atau Bukan Wali Kelas)!',
+        'warning'
+      );
+      return;
+    }
 
     // Pastikan tidak ada mapel tambahan kosong
     const validTambahan = mapelTambahan.filter(
@@ -342,10 +366,21 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
     setUtamaKelases(initialUtamaKelases);
     setIsUtamaLocked(Boolean(initialMapelUtamaId));
     setMapelTambahan(initialMapelTambahan);
+    setHasConfirmedNoTambahan(initialConfirmedNoTambahan);
     setIsWaliEditing(false);
     setEditingTambahanIdx(null);
     showToast('Perubahan dibatalkan ke data awal.', 'info');
   };
+
+  // Status kelengkapan 3 kartu utama untuk badge checklist
+  const isUtamaComplete = Boolean(mapelUtamaId) && utamaKelases.length > 0;
+  const isWaliComplete = Boolean(waliKelas && waliKelas.trim() !== '');
+  const isTambahanComplete =
+    mapelTambahan.length > 0
+      ? mapelTambahan.every(
+          t => Boolean(t.mapelId) && (t.kelases?.length || 0) > 0
+        )
+      : hasConfirmedNoTambahan;
 
   // Eksekusi konfirmasi Edit
   const handleProceedEdit = () => {
@@ -431,6 +466,7 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
           >
             <BookOpen className="w-3.5 h-3.5 text-blue-600" />
             <span>Mapel Utama</span>
+            {isUtamaComplete && <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />}
           </button>
 
           <button
@@ -444,6 +480,7 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
           >
             <Layers className="w-3.5 h-3.5 text-amber-600" />
             <span>Tambahan ({mapelTambahan.length})</span>
+            {isTambahanComplete && <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />}
           </button>
 
           <button
@@ -457,6 +494,7 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
           >
             <Users className="w-3.5 h-3.5 text-emerald-600" />
             <span>Wali Kelas</span>
+            {isWaliComplete && <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />}
           </button>
         </div>
       </div>
@@ -464,149 +502,41 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
       {/* 2. MAIN 3-SECTION CONTAINER (Full screen fit with isolated vertical scroll) */}
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-3 overflow-hidden">
         {/* ========================================================================= */}
-        {/* SEKSI 1: TUGAS TAMBAHAN WALI KELAS */}
-        {/* ========================================================================= */}
-        <section
-          className={`neu-raised-card bg-[#EAF0F9] rounded-2xl p-3 sm:p-4 border border-white/80 flex flex-col h-full min-h-0 ${
-            activeTabMobile !== 'wali' ? 'hidden lg:flex' : 'flex'
-          }`}
-        >
-          {/* Area Scroll Mandiri */}
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-scroll pr-1 space-y-3">
-            {!isWaliEditing ? (
-              waliKelas === 'Bukan Wali Kelas' ? (
-                <div className="neu-flat bg-[#EBF0F8] rounded-2xl p-4 text-center border border-white/90 flex flex-col items-center justify-center space-y-3">
-                  <div className="w-12 h-12 rounded-2xl neu-pressed bg-[#E8EEF6] text-emerald-600 flex items-center justify-center shadow-inner">
-                    <GraduationCap className="w-6 h-6 stroke-[2.5]" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-black text-[#0D162B]">
-                      Bukan Wali Kelas
-                    </h3>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmModal({ type: 'wali' })}
-                    className="px-4 py-1.5 rounded-xl neu-flat active:neu-pressed text-emerald-700 hover:text-emerald-800 border border-emerald-200 text-xs font-black cursor-pointer shadow-xs"
-                  >
-                    edit
-                  </button>
-                </div>
-              ) : (
-                <div className="neu-flat bg-[#EBF0F8] rounded-2xl p-3.5 border border-white/90 space-y-3">
-                  {/* Ikon Peran Aga Besar + Nama Wali Kelas */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200/80 flex items-center justify-center shrink-0 shadow-inner">
-                      <GraduationCap className="w-6 h-6 stroke-[2.5]" />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="text-sm sm:text-base font-black text-[#0D162B] truncate">
-                        Wali Kelas {waliKelas}
-                      </h3>
-                    </div>
-                  </div>
-
-                  {/* Di bawahnya: Ikon Kelas Aga Besar + List Kelas */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2.5 p-2 rounded-xl neu-pressed bg-[#E8EEF6]">
-                      <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/80 flex items-center justify-center shrink-0 shadow-inner">
-                        <Users className="w-4 h-4 stroke-[2.5]" />
-                      </div>
-                      <span className="text-xs font-black text-[#0D162B]">
-                        Kelas {waliKelas}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Tombol edit: cukup tulisan "edit" */}
-                  <div className="pt-2 border-t border-[#d4deeb]/60 flex items-center justify-end">
-                    <button
-                      type="button"
-                      onClick={() => setConfirmModal({ type: 'wali' })}
-                      className="px-4 py-1.5 rounded-xl neu-flat active:neu-pressed text-emerald-700 hover:text-emerald-800 border border-emerald-200 text-xs font-black cursor-pointer shadow-xs"
-                    >
-                      edit
-                    </button>
-                  </div>
-                </div>
-              )
-            ) : (
-              /* FORMULIR EDIT WALI KELAS (CLEAN & RINGKAS) */
-              <div className="neu-flat bg-[#EBF0F8] rounded-2xl p-3.5 border border-emerald-300 shadow-sm space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-emerald-800">
-                    Ubah Wali Kelas
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setShowWaliModal(true)}
-                  className="w-full neu-pressed bg-[#E8EEF6] border border-white/70 rounded-2xl flex items-center justify-between p-3 text-left transition-all hover:bg-[#e4ebf5] active:scale-[0.99] cursor-pointer"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/80 flex items-center justify-center shrink-0 shadow-xs">
-                      <GraduationCap className="w-4 h-4 stroke-[2.5]" />
-                    </div>
-                    <span className="truncate text-xs sm:text-sm font-extrabold text-[#0D162B]">
-                      {waliKelas === 'Bukan Wali Kelas' ? 'Pilih Kelas Wali...' : `Wali Kelas ${waliKelas}`}
-                    </span>
-                  </div>
-                  <ChevronDown className="w-4 h-4 text-slate-400" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setWaliKelas('Bukan Wali Kelas');
-                    showToast('Status diatur: Bukan Wali Kelas', 'info');
-                  }}
-                  className={`w-full py-1.5 px-3 rounded-xl text-[11px] font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                    waliKelas === 'Bukan Wali Kelas'
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-extrabold neu-pressed'
-                      : 'neu-flat bg-[#EBF0F8] text-slate-600 hover:text-slate-800 border-white/80'
-                  }`}
-                >
-                  <span>Bukan Wali Kelas</span>
-                </button>
-
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#d4deeb]/60">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setWaliKelas(initialWaliKelas);
-                      setIsWaliEditing(false);
-                    }}
-                    className="px-3 py-1.5 rounded-xl neu-flat active:neu-pressed text-slate-600 text-xs font-bold cursor-pointer"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsWaliEditing(false)}
-                    className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-extrabold shadow-sm cursor-pointer"
-                  >
-                    Simpan
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* ========================================================================= */}
-        {/* SEKSI 2: MATA PELAJARAN UTAMA */}
+        {/* SEKSI 1: MATA PELAJARAN UTAMA */}
         {/* ========================================================================= */}
         <section
           className={`neu-raised-card bg-[#EAF0F9] rounded-2xl p-3 sm:p-4 border border-white/80 flex flex-col h-full min-h-0 ${
             activeTabMobile !== 'utama' ? 'hidden lg:flex' : 'flex'
           }`}
         >
+          {/* Header Kartu dengan Checklist */}
+          <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-[#d4deeb]/70 shrink-0">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-[11px] font-black shadow-xs">
+                1
+              </div>
+              <span className="text-xs font-black text-[#0D162B] tracking-tight block">
+                Mapel Utama &amp; Kelas
+              </span>
+            </div>
+            {isUtamaComplete ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold shadow-xs">
+                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                Terisi
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold shadow-xs">
+                <AlertCircle className="w-3 h-3 text-amber-600" />
+                Wajib Diisi
+              </span>
+            )}
+          </div>
+
           {/* Area Scroll Mandiri */}
           <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-scroll pr-1 space-y-3">
             {isUtamaLocked && mapelUtamaId ? (
               <div className="neu-flat bg-[#EBF0F8] rounded-2xl p-3.5 border border-white/90 space-y-3">
-                {/* Icon Mapel Aga Besar + Nama Mapel */}
+                {/* Icon Mapel + Nama Mapel */}
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 border border-blue-200/80 flex items-center justify-center shrink-0 shadow-inner">
                     <BookOpen className="w-6 h-6 stroke-[2.5]" />
@@ -615,10 +545,13 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
                     <h3 className="text-sm sm:text-base font-black text-[#0D162B] truncate">
                       {getMapelName(mapelUtamaId)}
                     </h3>
+                    <p className="text-[11px] text-slate-500 font-medium">
+                      {utamaKelases.length} Rombel Binaan
+                    </p>
                   </div>
                 </div>
 
-                {/* Di bawahnya: Icon Kelas Aga Besar + List Kelas */}
+                {/* List Kelas */}
                 <div className="space-y-1.5">
                   <div className="flex items-start gap-2.5 p-2 rounded-xl neu-pressed bg-[#E8EEF6]">
                     <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-200/80 flex items-center justify-center shrink-0 shadow-inner mt-0.5">
@@ -641,14 +574,14 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
                   </div>
                 </div>
 
-                {/* Tombol edit: cukup tulisan "edit" */}
+                {/* Tombol edit */}
                 <div className="pt-2 border-t border-[#d4deeb]/60 flex items-center justify-end">
                   <button
                     type="button"
                     onClick={() => setConfirmModal({ type: 'utama' })}
                     className="px-4 py-1.5 rounded-xl neu-flat active:neu-pressed text-blue-700 hover:text-blue-800 border border-blue-200 text-xs font-black cursor-pointer shadow-xs"
                   >
-                    edit
+                    Ubah
                   </button>
                 </div>
               </div>
@@ -719,33 +652,80 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
         </section>
 
         {/* ========================================================================= */}
-        {/* SEKSI 3: MATA PELAJARAN TAMBAHAN */}
+        {/* SEKSI 2: MATA PELAJARAN TAMBAHAN */}
         {/* ========================================================================= */}
         <section
           className={`neu-raised-card bg-[#EAF0F9] rounded-2xl p-3 sm:p-4 border border-white/80 flex flex-col h-full min-h-0 ${
             activeTabMobile !== 'tambahan' ? 'hidden lg:flex' : 'flex'
           }`}
         >
+          {/* Header Kartu dengan Checklist */}
+          <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-[#d4deeb]/70 shrink-0">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center text-[11px] font-black shadow-xs">
+                2
+              </div>
+              <span className="text-xs font-black text-[#0D162B] tracking-tight block">
+                Mapel Tambahan
+              </span>
+            </div>
+            {isTambahanComplete ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold shadow-xs">
+                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                {mapelTambahan.length > 0 ? 'Terisi' : 'Terkonfirmasi'}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold shadow-xs">
+                <AlertCircle className="w-3 h-3 text-amber-600" />
+                Wajib Diisi
+              </span>
+            )}
+          </div>
+
           {/* Area Scroll Mandiri */}
           <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-scroll pr-1 space-y-3">
             {mapelTambahan.length === 0 ? (
-              <div className="neu-flat bg-[#EBF0F8] rounded-2xl p-5 text-center border border-white/90 flex flex-col items-center justify-center space-y-3">
+              <div className="neu-flat bg-[#EBF0F8] rounded-2xl p-4 text-center border border-white/90 flex flex-col items-center justify-center space-y-3">
                 <div className="w-12 h-12 rounded-2xl neu-pressed bg-[#E8EEF6] text-amber-600 flex items-center justify-center shadow-inner">
                   <Layers className="w-6 h-6 stroke-[2.5]" />
                 </div>
                 <div>
                   <h4 className="text-sm font-black text-[#0D162B]">
-                    Tidak Ada Mata Pelajaran Tambahan
+                    {hasConfirmedNoTambahan
+                      ? 'Tidak Ada Mapel Tambahan'
+                      : 'Mata Pelajaran Tambahan'}
                   </h4>
+                  <p className="text-[11px] text-slate-500 font-medium max-w-xs mx-auto mt-0.5">
+                    {hasConfirmedNoTambahan
+                      ? 'Status terkonfirmasi: Anda hanya mengajar 1 Mapel Utama'
+                      : 'Tambahkan mapel lain jika ada, atau konfirmasi jika hanya mengajar 1 mapel'}
+                  </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleAddTambahanPackage}
-                  className="px-4 py-2 rounded-xl neu-flat active:neu-pressed text-amber-700 hover:text-amber-800 border border-amber-200 font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-                >
-                  <Plus className="w-4 h-4 stroke-[2.5]" />
-                  <span>Tambah Mapel Tambahan</span>
-                </button>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-2 w-full pt-1">
+                  <button
+                    type="button"
+                    onClick={handleAddTambahanPackage}
+                    className="w-full sm:w-auto px-3.5 py-2 rounded-xl neu-flat active:neu-pressed text-amber-700 hover:text-amber-800 border border-amber-200 font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all"
+                  >
+                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>Tambah Mapel</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHasConfirmedNoTambahan(true);
+                      showToast('Dikonfirmasi: Tidak ada mata pelajaran tambahan.', 'info');
+                    }}
+                    className={`w-full sm:w-auto px-3.5 py-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95 ${
+                      hasConfirmedNoTambahan
+                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 neu-pressed shadow-inner'
+                        : 'neu-flat bg-[#EBF0F8] text-slate-600 hover:text-slate-800 border border-white/90 shadow-xs'
+                    }`}
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>{hasConfirmedNoTambahan ? 'Sudah Dikonfirmasi' : 'Tidak Ada Tambahan'}</span>
+                  </button>
+                </div>
               </div>
             ) : (
               mapelTambahan.map((tambahan, idx) => {
@@ -762,45 +742,52 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
                     }`}
                   >
                     {!isEditing ? (
-                      /* LOCKED PACKAGE VIEW */
                       <>
-                        {/* Icon Mapel Aga Besar + Nama Mapel */}
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center shrink-0 shadow-inner">
-                              <Layers className="w-6 h-6 stroke-[2.5]" />
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center shrink-0 shadow-inner">
+                              <Layers className="w-5 h-5 stroke-[2.5]" />
                             </div>
                             <div className="min-w-0">
-                              <h3 className="text-sm sm:text-base font-black text-[#0D162B] truncate">
-                                {mNama || 'Belum Memilih Mapel'}
-                              </h3>
+                              <h4 className="text-xs sm:text-sm font-black text-[#0D162B] truncate">
+                                {mNama || 'Pilih Mapel Tambahan'}
+                              </h4>
+                              <p className="text-[10px] text-slate-500 font-semibold truncate">
+                                Paket Tambahan #{idx + 1}
+                              </p>
                             </div>
                           </div>
 
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setConfirmModal({ type: 'deleteTambahan', index: idx })
-                            }
-                            className="p-1.5 rounded-xl neu-flat active:neu-pressed text-rose-600 hover:text-rose-700 border border-rose-200/60 cursor-pointer shadow-xs"
-                            title="Hapus paket"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => setConfirmModal({ type: 'deleteTambahan', index: idx })}
+                              className="w-7 h-7 rounded-lg neu-flat active:neu-pressed text-rose-500 hover:text-rose-700 flex items-center justify-center cursor-pointer border border-white/80"
+                              title="Hapus paket mapel tambahan"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfirmModal({ type: 'tambahan', index: idx })}
+                              className="px-2.5 py-1 rounded-lg neu-flat active:neu-pressed text-amber-700 hover:text-amber-800 border border-amber-200 text-xs font-black cursor-pointer shadow-xs"
+                            >
+                              Ubah
+                            </button>
+                          </div>
                         </div>
 
-                        {/* Di bawahnya: Icon Kelas Aga Besar + List Kelas */}
-                        <div className="space-y-1.5">
-                          <div className="flex items-start gap-2.5 p-2 rounded-xl neu-pressed bg-[#E8EEF6]">
-                            <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center shrink-0 shadow-inner mt-0.5">
-                              <GraduationCap className="w-4 h-4 stroke-[2.5]" />
+                        <div className="space-y-1">
+                          <div className="flex items-start gap-2 p-2 rounded-xl neu-pressed bg-[#E8EEF6]">
+                            <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center shrink-0 shadow-inner mt-0.5">
+                              <GraduationCap className="w-3.5 h-3.5 stroke-[2.5]" />
                             </div>
-                            <div className="flex flex-wrap gap-1.5 flex-1 py-0.5">
+                            <div className="flex flex-wrap gap-1 flex-1 py-0.5">
                               {tambahan.kelases && tambahan.kelases.length > 0 ? (
                                 tambahan.kelases.map((k, kIdx) => (
                                   <span
                                     key={kIdx}
-                                    className="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200/80 text-[11px] font-black shadow-xs"
+                                    className="px-2 py-0.5 rounded-lg bg-amber-50 text-amber-900 border border-amber-200/80 text-[10px] font-black shadow-xs"
                                   >
                                     {k}
                                   </span>
@@ -811,36 +798,13 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
                             </div>
                           </div>
                         </div>
-
-                        {/* Tombol edit: cukup tulisan "edit" */}
-                        <div className="pt-2 border-t border-[#d4deeb]/60 flex items-center justify-end">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setConfirmModal({ type: 'tambahan', index: idx })
-                            }
-                            className="px-4 py-1.5 rounded-xl neu-flat active:neu-pressed text-amber-700 hover:text-amber-800 border border-amber-200 text-xs font-black cursor-pointer shadow-xs"
-                          >
-                            edit
-                          </button>
-                        </div>
                       </>
                     ) : (
-                      /* EDITING PACKAGE VIEW */
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-extrabold text-amber-800">
-                            Konfigurasi Mapel Tambahan
+                            Edit Mapel Tambahan #{idx + 1}
                           </span>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setConfirmModal({ type: 'deleteTambahan', index: idx })
-                            }
-                            className="p-1 rounded-lg text-rose-500 hover:text-rose-700 text-xs cursor-pointer"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
                         </div>
 
                         <button
@@ -897,6 +861,204 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
                   <Plus className="w-4 h-4 stroke-[2.5]" />
                   <span>Tambah Mapel Tambahan</span>
                 </button>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* ========================================================================= */}
+        {/* SEKSI 3: TUGAS TAMBAHAN WALI KELAS */}
+        {/* ========================================================================= */}
+        <section
+          className={`neu-raised-card bg-[#EAF0F9] rounded-2xl p-3 sm:p-4 border border-white/80 flex flex-col h-full min-h-0 ${
+            activeTabMobile !== 'wali' ? 'hidden lg:flex' : 'flex'
+          }`}
+        >
+          {/* Header Kartu dengan Checklist */}
+          <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-[#d4deeb]/70 shrink-0">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-[11px] font-black shadow-xs">
+                3
+              </div>
+              <span className="text-xs font-black text-[#0D162B] tracking-tight block">
+                Tugas Wali Kelas
+              </span>
+            </div>
+            {isWaliComplete ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold shadow-xs">
+                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                Terisi
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold shadow-xs">
+                <AlertCircle className="w-3 h-3 text-amber-600" />
+                Wajib Dipilih
+              </span>
+            )}
+          </div>
+
+          {/* Area Scroll Mandiri */}
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-scroll pr-1 space-y-3">
+            {!isWaliEditing ? (
+              !waliKelas ? (
+                /* Pengguna Baru: Belum Memilih Status Wali Kelas */
+                <div className="neu-flat bg-[#EBF0F8] rounded-2xl p-4 text-center border-2 border-dashed border-amber-300 flex flex-col items-center justify-center space-y-3">
+                  <div className="w-12 h-12 rounded-2xl neu-pressed bg-[#E8EEF6] text-amber-600 flex items-center justify-center shadow-inner">
+                    <Users className="w-6 h-6 stroke-[2.2]" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-black text-[#0D162B]">
+                      Belum Memilih Penugasan Wali Kelas
+                    </h4>
+                    <p className="text-[11px] text-slate-500 font-medium max-w-xs mx-auto mt-1">
+                      Silakan tentukan apakah Anda mengampu kelas binaan atau berstatus bukan wali kelas
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsWaliEditing(true);
+                      setShowWaliModal(true);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95 transition-all"
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    <span>Pilih Status Wali Kelas</span>
+                  </button>
+                </div>
+              ) : waliKelas === 'Bukan Wali Kelas' ? (
+                /* Status: Bukan Wali Kelas */
+                <div className="neu-flat bg-[#EBF0F8] rounded-2xl p-4 text-center border border-white/90 flex flex-col items-center justify-center space-y-3">
+                  <div className="w-12 h-12 rounded-2xl neu-pressed bg-[#E8EEF6] text-emerald-600 flex items-center justify-center shadow-inner">
+                    <GraduationCap className="w-6 h-6 stroke-[2.5]" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-[#0D162B]">
+                      Bukan Wali Kelas
+                    </h3>
+                    <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                      Bertugas hanya mengajar mata pelajaran tanpa binaan rombel
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmModal({ type: 'wali' })}
+                    className="px-4 py-1.5 rounded-xl neu-flat active:neu-pressed text-emerald-700 hover:text-emerald-800 border border-emerald-200 text-xs font-black cursor-pointer shadow-xs"
+                  >
+                    Ubah
+                  </button>
+                </div>
+              ) : (
+                /* Status: Menjabat Wali Kelas Tertentu */
+                <div className="neu-flat bg-[#EBF0F8] rounded-2xl p-3.5 border border-white/90 space-y-3">
+                  {/* Ikon Peran + Nama Wali Kelas */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200/80 flex items-center justify-center shrink-0 shadow-inner">
+                      <GraduationCap className="w-6 h-6 stroke-[2.5]" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-sm sm:text-base font-black text-[#0D162B] truncate">
+                        Wali Kelas {waliKelas}
+                      </h3>
+                      <p className="text-[11px] text-slate-500 font-medium truncate">
+                        Rombongan belajar binaan resmi
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* List Kelas Binaan */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2.5 p-2 rounded-xl neu-pressed bg-[#E8EEF6]">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/80 flex items-center justify-center shrink-0 shadow-inner">
+                        <Users className="w-4 h-4 stroke-[2.5]" />
+                      </div>
+                      <span className="text-xs font-black text-[#0D162B]">
+                        Kelas {waliKelas}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Tombol edit */}
+                  <div className="pt-2 border-t border-[#d4deeb]/60 flex items-center justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setConfirmModal({ type: 'wali' })}
+                      className="px-4 py-1.5 rounded-xl neu-flat active:neu-pressed text-emerald-700 hover:text-emerald-800 border border-emerald-200 text-xs font-black cursor-pointer shadow-xs"
+                    >
+                      Ubah
+                    </button>
+                  </div>
+                </div>
+              )
+            ) : (
+              /* FORMULIR EDIT WALI KELAS (CLEAN & RINGKAS) */
+              <div className="neu-flat bg-[#EBF0F8] rounded-2xl p-3.5 border border-emerald-300 shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-emerald-800">
+                    Pilih Penugasan Wali Kelas
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowWaliModal(true)}
+                  className="w-full neu-pressed bg-[#E8EEF6] border border-white/70 rounded-2xl flex items-center justify-between p-3 text-left transition-all hover:bg-[#e4ebf5] active:scale-[0.99] cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/80 flex items-center justify-center shrink-0 shadow-xs">
+                      <GraduationCap className="w-4 h-4 stroke-[2.5]" />
+                    </div>
+                    <span className="truncate text-xs sm:text-sm font-extrabold text-[#0D162B]">
+                      {!waliKelas
+                        ? 'Pilih Rombel Kelas Binaan...'
+                        : waliKelas === 'Bukan Wali Kelas'
+                        ? 'Bukan Wali Kelas (Klik untuk ganti)'
+                        : `Wali Kelas ${waliKelas}`}
+                    </span>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-slate-400" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setWaliKelas('Bukan Wali Kelas');
+                    showToast('Status diatur: Bukan Wali Kelas', 'info');
+                  }}
+                  className={`w-full py-2 px-3 rounded-xl text-[11px] font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    waliKelas === 'Bukan Wali Kelas'
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-extrabold neu-pressed'
+                      : 'neu-flat bg-[#EBF0F8] text-slate-600 hover:text-slate-800 border-white/80'
+                  }`}
+                >
+                  <span>Atur Sebagai "Bukan Wali Kelas"</span>
+                </button>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#d4deeb]/60">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWaliKelas(initialWaliKelas);
+                      setIsWaliEditing(false);
+                    }}
+                    className="px-3 py-1.5 rounded-xl neu-flat active:neu-pressed text-slate-600 text-xs font-bold cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!waliKelas) {
+                        showToast('Pilih kelas binaan atau klik tombol Bukan Wali Kelas!', 'warning');
+                        return;
+                      }
+                      setIsWaliEditing(false);
+                    }}
+                    className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-extrabold shadow-sm cursor-pointer"
+                  >
+                    Selesai
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -1113,6 +1275,7 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
         currentWaliKelas={waliKelas}
         onSelectWaliKelas={selectedVal => {
           setWaliKelas(selectedVal);
+          setIsWaliEditing(false);
           showToast(
             selectedVal === 'Bukan Wali Kelas'
               ? 'Status diatur: Bukan Wali Kelas'
