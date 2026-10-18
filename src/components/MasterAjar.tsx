@@ -11,6 +11,7 @@ import {
   Trash2,
   ChevronDown,
   Save,
+  Check,
 } from 'lucide-react';
 import { MasterAjarData, MapelGroup, RefItem, User } from '../types';
 import { callGasApi, DEFAULT_REFERENCES, getCachedReferences } from '../services/gasApi';
@@ -108,6 +109,13 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
     return DEFAULT_REFERENCES.MataPelajaran || [];
   }, [data.listMapel]);
 
+  // Buka kunci menu secara proaktif jika data dari server sudah lengkap
+  useEffect(() => {
+    if (isInitiallyVerified && onVerified) {
+      onVerified();
+    }
+  }, [isInitiallyVerified, onVerified]);
+
   // Sinkronisasi saat data dari server diperbarui
   useEffect(() => {
     const uId = data.mapelUtamaId || (data.mapelUtama?.mapelId ?? '');
@@ -132,7 +140,10 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
     );
     setIsVerified(verified);
     setIsEditing(!verified);
-  }, [data, currentUser]);
+    if (verified && onVerified) {
+      onVerified();
+    }
+  }, [data, currentUser, onVerified]);
 
   // Helper nama mapel
   const getMapelName = (id: string) => {
@@ -226,6 +237,24 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
         mapelTambahan: validTambahan,
       };
 
+      // Simpan flag lokal secara instan agar menu langsung terbuka tanpa menunggu lambatnya server
+      const ta = data.tahunAjaran || '2026/2027';
+      if (currentUser?.userId) {
+        localStorage.setItem(`master_ajar_configured_${currentUser.userId}_${ta}`, 'true');
+      }
+      if (currentUser?.nip) {
+        localStorage.setItem(`master_ajar_configured_${currentUser.nip}_${ta}`, 'true');
+      }
+      if (currentUser?.username) {
+        localStorage.setItem(`master_ajar_configured_${currentUser.username}_${ta}`, 'true');
+      }
+      localStorage.setItem(`master_ajar_configured_${ta}`, 'true');
+
+      // Panggil callback pembuka kunci menu seketika
+      if (onVerified) {
+        onVerified();
+      }
+
       const res = await callGasApi('saveMasterAjar', [
         token,
         waliKelas,
@@ -234,25 +263,12 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
       ]);
 
       if (res && res.success) {
-        showToast('Master Ajar berhasil diverifikasi!', 'success');
-        const ta = data.tahunAjaran || '2026/2027';
-        if (currentUser?.userId) {
-          localStorage.setItem(`master_ajar_configured_${currentUser.userId}_${ta}`, 'true');
-        } else {
-          localStorage.setItem(`master_ajar_configured_${ta}`, 'true');
-        }
-
+        showToast('Master Ajar berhasil diverifikasi! Seluruh menu telah terbuka.', 'success');
         setIsVerified(true);
         setIsEditing(false);
-
-        // Langsung buka semua menu aplikasi seketika
-        if (onVerified) {
-          onVerified();
-        } else {
-          onRefresh();
-        }
+        onRefresh();
       } else {
-        showToast(res?.message || 'Gagal memverifikasi Master Ajar.', 'error');
+        showToast(res?.message || 'Gagal memverifikasi Master Ajar ke server.', 'error');
       }
     } catch {
       showToast('Gagal menghubungi server.', 'error');
@@ -270,22 +286,22 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full min-h-0 w-full max-w-2xl mx-auto select-none px-2 sm:px-4 py-2">
+    <div className="flex flex-col w-full max-w-xl sm:max-w-2xl mx-auto select-none space-y-3.5 pb-4">
       {/* 1. HEADER RINGKAS & BERSIH */}
-      <div className="shrink-0 mb-3 flex items-center justify-between pb-2 border-b border-[#d4deeb]/60">
+      <div className="flex items-center justify-between pb-2 border-b border-[#d4deeb]/70">
         <div>
           <h2 className="text-base font-semibold text-[#1E2430] tracking-tight">Master Ajar</h2>
           <p className="text-[11px] text-[#5A6578]">Tahun Ajaran {currentTa}</p>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="text-[11px] font-mono tabular-nums px-2.5 py-1 rounded-lg neu-pressed bg-[#E8EEF6] text-slate-600">
-            {[isUtamaComplete, isTambahanComplete, isWaliComplete].filter(Boolean).length}/3 Selesai
+          <span className="text-[11px] font-mono tabular-nums px-2.5 py-1 rounded-lg neu-pressed bg-[#E8EEF6] text-slate-700 font-medium">
+            {[isUtamaComplete, isTambahanComplete, isWaliComplete].filter(Boolean).length}/3 Terisi
           </span>
         </div>
       </div>
 
       {/* 2. AREA 3 KARTU RINGKAS (INTERACTIVE SUMMARY CARDS) */}
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pr-0.5 space-y-3">
+      <div className="space-y-3">
         {/* KARTU 1: MAPEL UTAMA */}
         <div
           onClick={() => handleCardClick('utama')}
@@ -301,12 +317,12 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
               </span>
             </div>
             {isUtamaComplete ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-medium">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-medium">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                 Terisi
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-medium">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-medium">
                 <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
                 Wajib Diisi
               </span>
@@ -322,7 +338,7 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
               </p>
             ) : (
               <p className="text-slate-400 italic">
-                Belum dipilih. Klik kartu untuk memilih mata pelajaran dan kelas.
+                Belum dipilih. Klik kartu ini untuk memilih mata pelajaran dan rombel kelas.
               </p>
             )}
           </div>
@@ -343,12 +359,12 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
               </span>
             </div>
             {isTambahanComplete ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-medium">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-medium">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                 {mapelTambahan.length > 0 ? 'Terisi' : 'Dikonfirmasi'}
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-medium">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-medium">
                 <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
                 Wajib Diisi
               </span>
@@ -372,9 +388,24 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
                 </span>
               </p>
             ) : (
-              <p className="text-slate-400 italic">
-                Belum ditentukan. Klik kartu untuk menambah atau konfirmasi tidak ada.
-              </p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <p className="text-slate-400 italic">
+                  Belum ditentukan. Klik kartu ini untuk menambah mapel, atau:
+                </p>
+                <button
+                  type="button"
+                  onClick={e => {
+                    e.stopPropagation();
+                    setMapelTambahan([]);
+                    setHasConfirmedNoTambahan(true);
+                    showToast('Dikonfirmasi: Tidak ada mapel tambahan.', 'info');
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-medium flex items-center gap-1 shrink-0 cursor-pointer transition-colors"
+                >
+                  <Check className="w-3 h-3 text-emerald-600" />
+                  <span>Tidak Ada Tambahan</span>
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -394,12 +425,12 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
               </span>
             </div>
             {isWaliComplete ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-medium">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-medium">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                 Terisi
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-medium">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-medium">
                 <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
                 Wajib Dipilih
               </span>
@@ -409,25 +440,48 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
             {waliKelas ? (
               <p className="font-medium text-[#1E2430]">
                 {waliKelas === 'Bukan Wali Kelas'
-                  ? 'Bukan Wali Kelas'
+                  ? 'Bukan Wali Kelas (Hanya Mengajar)'
                   : `Wali Kelas ${waliKelas}`}
               </p>
             ) : (
               <p className="text-slate-400 italic">
-                Belum dipilih. Klik kartu untuk memilih rombel binaan atau status bukan wali kelas.
+                Belum dipilih. Klik kartu ini untuk memilih rombel binaan atau status bukan wali kelas.
               </p>
             )}
           </div>
         </div>
       </div>
 
-      {/* 3. BOTTOM ACTION BAR (FUNGSI VERIFIKASI & EDIT/X) */}
-      <div className="shrink-0 pt-3 pb-1 mt-auto">
-        <div className="neu-flat rounded-2xl p-2.5 sm:p-3 border border-white/90 flex items-center justify-between gap-2 shadow-sm">
-          <div className="min-w-0">
-            <span className="text-[11px] font-mono tabular-nums text-slate-500">
-              {isAllCardsComplete ? '3/3 Lengkap' : 'Lengkapi Semua Kartu'}
-            </span>
+      {/* 3. SEKSI AKSI VERIFIKASI & STATUS (TERLIHAT JELAS & TIDAK TERTUTUP) */}
+      <div className="neu-flat bg-[#EAF0F9] rounded-2xl p-3.5 sm:p-4 border border-white/90 shadow-sm space-y-2.5 mt-2">
+        {/* Petunjuk status jika belum lengkap */}
+        {!isAllCardsComplete && (
+          <div className="flex items-start gap-2 text-xs text-amber-800 bg-amber-50/80 border border-amber-200/90 p-2.5 rounded-xl">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="space-y-0.5 text-[11px]">
+              <p className="font-semibold text-amber-900">
+                Lengkapi 3 kartu di atas untuk mengaktifkan tombol verifikasi:
+              </p>
+              <ul className="list-disc list-inside text-amber-800 font-medium space-y-0.5">
+                {!isUtamaComplete && <li>Kartu 1: Pilih Mapel Utama &amp; Kelas</li>}
+                {!isTambahanComplete && <li>Kartu 2: Konfirmasi / Pilih Mapel Tambahan</li>}
+                {!isWaliComplete && <li>Kartu 3: Tentukan Penugasan Wali Kelas</li>}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* Baris Tombol Aksi */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-0.5">
+          <div className="text-xs text-[#5A6578]">
+            <span className="font-medium text-[#1E2430]">Status Konfigurasi: </span>
+            {isVerified && !isEditing ? (
+              <span className="text-emerald-700 font-semibold">Terverifikasi &amp; Terkunci</span>
+            ) : isAllCardsComplete ? (
+              <span className="text-blue-700 font-semibold">Siap Diverifikasi</span>
+            ) : (
+              <span className="text-amber-700 font-semibold">Belum Lengkap</span>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -436,9 +490,9 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
               <button
                 type="button"
                 disabled
-                className="px-4 py-2 rounded-xl neu-pressed bg-[#E8EEF6] text-emerald-700 font-medium text-xs flex items-center gap-1.5 border border-emerald-300/80 cursor-default"
+                className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl neu-pressed bg-[#E8EEF6] text-emerald-700 font-semibold text-xs flex items-center justify-center gap-1.5 border border-emerald-300/80 cursor-default"
               >
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 <span>Verified</span>
               </button>
             ) : (
@@ -446,10 +500,10 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
                 type="button"
                 onClick={handleVerify}
                 disabled={!isAllCardsComplete || saving}
-                className={`px-4 py-2 rounded-xl font-medium text-xs flex items-center gap-1.5 transition-all ${
+                className={`flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-all ${
                   isAllCardsComplete && !saving
-                    ? 'neu-btn bg-blue-600 text-white shadow-md cursor-pointer active:scale-95'
-                    : 'neu-flat bg-[#EBF0F8] text-slate-400 border border-white/80 cursor-not-allowed opacity-50'
+                    ? 'neu-btn bg-blue-600 hover:bg-blue-700 text-white shadow-md cursor-pointer active:scale-95'
+                    : 'neu-flat bg-[#E8EEF6] text-slate-400 border border-slate-300/80 cursor-not-allowed opacity-60'
                 }`}
               >
                 {saving ? (
@@ -459,9 +513,11 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <CheckCircle2 className="w-4 h-4" />
                     <span>
-                      {isEditing && isVerified ? 'Simpan & Verifikasi' : 'Verifikasi'}
+                      {isEditing && isVerified
+                        ? 'Simpan & Verifikasi'
+                        : 'Verifikasi Master Ajar'}
                     </span>
                   </>
                 )}
@@ -474,20 +530,20 @@ export const MasterAjar: React.FC<MasterAjarProps> = ({
                 <button
                   type="button"
                   onClick={handleCancelEdit}
-                  className="px-3 py-2 rounded-xl neu-flat active:neu-pressed text-rose-600 hover:text-rose-700 border border-rose-200/80 text-xs font-medium flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                  className="px-3.5 py-2.5 rounded-xl neu-flat active:neu-pressed text-rose-600 hover:text-rose-700 border border-rose-200/90 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95"
                   title="Batalkan perubahan"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="w-4 h-4" />
                   <span>Batal</span>
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={() => setIsEditing(true)}
-                  className="px-3.5 py-2 rounded-xl neu-flat active:neu-pressed text-slate-700 hover:text-[#1E2430] border border-white/90 text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                  className="px-3.5 py-2.5 rounded-xl neu-flat active:neu-pressed text-slate-700 hover:text-[#1E2430] border border-white/90 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95"
                   title="Ubah konfigurasi"
                 >
-                  <Edit3 className="w-3.5 h-3.5 text-blue-600" />
+                  <Edit3 className="w-4 h-4 text-blue-600" />
                   <span>Edit</span>
                 </button>
               )

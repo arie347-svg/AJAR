@@ -426,7 +426,7 @@ export function App() {
                 activePage === 'dashboard'
                   ? 'flex-1 h-full min-h-0 overflow-hidden p-3 sm:p-4 max-w-xl w-full mx-auto flex flex-col'
                   : activePage === 'master-ajar'
-                  ? 'flex-1 h-full min-h-0 overflow-hidden p-2.5 sm:p-4 max-w-5xl w-full mx-auto flex flex-col'
+                  ? 'flex-1 h-full min-h-0 overflow-y-auto overscroll-contain px-2.5 sm:px-4 pt-2 pb-28 md:pb-6 max-w-xl sm:max-w-2xl w-full mx-auto flex flex-col'
                   : activePage === 'profil'
                   ? 'flex-1 h-full min-h-0 overflow-y-auto no-scrollbar p-3 sm:p-4 max-w-lg w-full mx-auto flex flex-col'
                   : activePage === 'master-siswa'
