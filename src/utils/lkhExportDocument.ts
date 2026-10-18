@@ -219,6 +219,11 @@ export function parseJamKeSummary(raw: any): {
   display: string;
   sortOrder: number;
 } {
+  const isNonKbm = parseIsNonKbmRecord(
+    raw?.HariNonKBM ?? raw?.IsNonKbm ?? raw?.isNonKbm
+  );
+  const defaultEmptyOrder = isNonKbm ? -2 : -1;
+
   const rawJamKe = String(raw?.JamKe ?? raw?.jamKe ?? '').trim();
   const rawMulai = raw?.JamMulai ?? raw?.jamMulai ?? '';
   const rawSelesai = raw?.JamSelesai ?? raw?.jamSelesai ?? '';
@@ -240,7 +245,7 @@ export function parseJamKeSummary(raw: any): {
         sortOrder: m,
       };
     }
-    return { display: rawJamKe, sortOrder: 99 };
+    return { display: rawJamKe, sortOrder: defaultEmptyOrder };
   }
 
   if (rawMulai !== '' && rawSelesai !== '') {
@@ -264,7 +269,7 @@ export function parseJamKeSummary(raw: any): {
     return { display: `${s}`, sortOrder: s };
   }
 
-  return { display: '', sortOrder: 99 };
+  return { display: '', sortOrder: defaultEmptyOrder };
 }
 
 /**

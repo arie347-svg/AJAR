@@ -21,6 +21,7 @@ import {
   FileText,
   Layers,
   RotateCcw,
+  Loader2,
 } from 'lucide-react';
 import { LkhRecord, PengajaranItem, ReferencesMap, User } from '../types';
 import { callGasApi, DEFAULT_REFERENCES } from '../services/gasApi';
@@ -269,6 +270,24 @@ function parseJamKeField(raw: any): {
   }
 
   return { jamKeStr: '', jamMulai: '', jamSelesai: '' };
+}
+
+/**
+ * Urutan Jam Ke untuk penyortiran baris LKH pada tanggal yang sama.
+ * Jika jam ke tidak diisi:
+ * - Non-KBM diurutkan paling atas (-2)
+ * - Baris tanpa jam lainnya (-1)
+ * - Jam 0, 1, 2, ...
+ */
+function getRecordJamSortOrder(rec: LkhRecord): number {
+  const isNonKbm = parseHariNonKbm(
+    rec.HariNonKBM ?? rec.IsNonKbm ?? rec.isNonKbm
+  );
+  const { jamMulai } = parseJamKeField(rec);
+  if (jamMulai !== '' && !isNaN(Number(jamMulai))) {
+    return Number(jamMulai);
+  }
+  return isNonKbm ? -2 : -1;
 }
 
 /**
@@ -525,9 +544,10 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
     return { year: now.getFullYear(), month: now.getMonth() };
   });
 
-  // State Tekan Lama (Long-Press) pada baris tabel Rekap LKH untuk memunculkan ikon hapus
-  const [longPressedRowId, setLongPressedRowId] = useState<string | null>(null);
-  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // State Baris Terpilih untuk Mode Edit (tekan 2x / multi-pilih untuk hapus)
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
+  const [isDeletingBatch, setIsDeletingBatch] = useState<boolean>(false);
+  const lastTapRef = useRef<{ rowId: string; time: number } | null>(null);
 
   // Identitas UserID guru terkait (prioritaskan UserID dari sheet 01_Users / 09_LKH)
   const guruUserId = useMemo(() => {
@@ -654,9 +674,7 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
           const dateA = normalizeIsoDate(a.Tanggal || a.tanggal || '');
           const dateB = normalizeIsoDate(b.Tanggal || b.tanggal || '');
           if (dateA !== dateB) return dateB.localeCompare(dateA);
-          const jA = Number(a.JamMulai ?? a.jamMulai ?? 99);
-          const jB = Number(b.JamMulai ?? b.jamMulai ?? 99);
-          return jA - jB;
+          return getRecordJamSortOrder(a) - getRecordJamSortOrder(b);
         });
 
         setHistoryRecords(finalRecords);
@@ -1090,9 +1108,13 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
 
   // Hapus Catatan LKH (saat ikon hapus diklik setelah tekan lama)
   const handleDeleteRecord = async (lkhId: string) => {
-    if (deletingId) return;
+    if (deletingId || isDeletingBatch) return;
     setDeletingId(lkhId);
-    setLongPressedRowId(null);
+    setSelectedRowIds(prev => {
+      const next = new Set(prev);
+      next.delete(lkhId);
+      return next;
+    });
 
     const prevRecords = [...historyRecords];
     const nextRecords = prevRecords.filter(
@@ -1122,25 +1144,69 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
     }
   };
 
-  // Handler Tekan Lama (Long-Press) pada baris tabel Rekap LKH (HANYA berfungsi pada Mode Edit)
-  const handleRowPressStart = (rowId: string) => {
-    if (!isRekapEditMode) return;
-    // Jika sedang ada tombol hapus yang tampil pada baris lain, langsung hilangkan saat menekan baris lain
-    if (longPressedRowId && longPressedRowId !== rowId) {
-      setLongPressedRowId(null);
-    }
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-    }
-    longPressTimerRef.current = setTimeout(() => {
-      setLongPressedRowId(prev => (prev === rowId ? null : rowId));
-    }, 450);
+  // Handler Pilih Baris Mode Edit (Tekan 2x / Double-Tap untuk memilih baris hapus)
+  const handleToggleRowSelection = (rowId: string) => {
+    setSelectedRowIds(prev => {
+      const next = new Set(prev);
+      if (next.has(rowId)) {
+        next.delete(rowId);
+      } else {
+        next.add(rowId);
+      }
+      return next;
+    });
   };
 
-  const handleRowPressEnd = () => {
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
+  const handleRowClick = (rowId: string) => {
+    if (!isRekapEditMode) return;
+
+    // Jika mode multi-pilih sudah aktif (sudah ada minimal 1 baris dipilih),
+    // pengguna cukup menekan 1x (tidak perlu tekan 2x lagi)
+    if (selectedRowIds.size > 0) {
+      lastTapRef.current = null;
+      handleToggleRowSelection(rowId);
+      return;
+    }
+
+    // Pada awal (belum ada baris yang dipilih), tekan 2x untuk memulai pemilihan
+    const now = Date.now();
+    const last = lastTapRef.current;
+    if (last && last.rowId === rowId && now - last.time < 450) {
+      lastTapRef.current = null;
+      handleToggleRowSelection(rowId);
+    } else {
+      lastTapRef.current = { rowId, time: now };
+    }
+  };
+
+  // Hapus Sekaligus Banyak Catatan LKH yang Terpilih
+  const handleDeleteBulkRecords = async () => {
+    if (isDeletingBatch || selectedRowIds.size === 0) return;
+    const idsToDelete = new Set(selectedRowIds);
+    setIsDeletingBatch(true);
+    setSelectedRowIds(new Set());
+
+    const prevRecords = [...historyRecords];
+    const nextRecords = prevRecords.filter(
+      r => !idsToDelete.has(r.LKHID || r.LkhID || r.lkhId)
+    );
+    setHistoryRecords(nextRecords);
+    try {
+      localStorage.setItem(scopedStorageKey, JSON.stringify(nextRecords));
+    } catch {}
+
+    try {
+      const activeToken = localStorage.getItem('ajar_token') || token;
+      await Promise.allSettled(
+        Array.from(idsToDelete).map(id =>
+          callGasApi<any>('deleteLkhRecord', [activeToken, id, guruIdentifier])
+        )
+      );
+      showToast(`${idsToDelete.size} catatan jurnal berhasil dihapus.`, 'success');
+    } catch {
+      showToast('Catatan jurnal dihapus secara lokal.', 'info');
+    } finally {
+      setIsDeletingBatch(false);
     }
   };
 
@@ -1191,16 +1257,12 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
       return true;
     });
 
-    // Urutkan berdasarkan Tanggal (naik) lalu Jam Mulai (naik)
+    // Urutkan berdasarkan Tanggal (naik) lalu Jam Mulai (naik) (Non-KBM tanpa jam ke di paling atas)
     return [...filtered].sort((a, b) => {
       const dA = normalizeIsoDate(a.Tanggal || a.tanggal || '');
       const dB = normalizeIsoDate(b.Tanggal || b.tanggal || '');
       if (dA !== dB) return dA.localeCompare(dB);
-      const { jamMulai: jA } = parseJamKeField(a);
-      const { jamMulai: jB } = parseJamKeField(b);
-      const numA = jA !== '' ? Number(jA) : 99;
-      const numB = jB !== '' ? Number(jB) : 99;
-      return numA - numB;
+      return getRecordJamSortOrder(a) - getRecordJamSortOrder(b);
     });
   }, [
     historyRecords,
@@ -1842,37 +1904,59 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
               <div className="shrink-0 flex items-center justify-between gap-2 px-1">
                 <span className="text-[10.5px] text-slate-500 font-normal truncate">
                   {isRekapEditMode
-                    ? `${previewFilteredRecords.length} baris • Tekan lama baris untuk hapus`
+                    ? selectedRowIds.size > 0
+                      ? `${selectedRowIds.size} baris dipilih • Ketuk 1x baris untuk pilih/batal`
+                      : `${previewFilteredRecords.length} baris • Tekan 2x baris untuk pilih hapus`
                     : `${previewFilteredRecords.length} baris jurnal`}
                 </span>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsRekapEditMode(prev => {
-                      const next = !prev;
-                      if (!next) {
-                        setLongPressedRowId(null);
-                      }
-                      return next;
-                    });
-                  }}
-                  title={isRekapEditMode ? 'Kembali ke mode biasa' : 'Mode Edit'}
-                  className={`min-h-[32px] rounded-xl text-[11px] font-medium flex items-center justify-center gap-1 transition-all cursor-pointer shrink-0 ${
-                    isRekapEditMode
-                      ? 'w-8 px-0 neu-btn bg-[#EEF2F6] text-rose-600 hover:text-rose-700 border border-white/90'
-                      : 'px-2.5 py-1 neu-btn bg-[#EEF2F6] text-slate-700 hover:text-blue-700 border border-white/90'
-                  }`}
-                >
-                  {isRekapEditMode ? (
-                    <X className="w-3.5 h-3.5 stroke-[2.5]" />
-                  ) : (
-                    <>
-                      <Edit3 className="w-3 h-3" />
-                      <span>Edit</span>
-                    </>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {isRekapEditMode && selectedRowIds.size > 1 && (
+                    <button
+                      type="button"
+                      onClick={handleDeleteBulkRecords}
+                      disabled={isDeletingBatch}
+                      title={`Hapus ${selectedRowIds.size} baris yang dipilih`}
+                      className="min-h-[32px] px-2.5 py-1 rounded-xl text-[11px] font-medium neu-btn bg-rose-600 text-white hover:bg-rose-700 flex items-center justify-center gap-1.5 shadow-xs active:scale-95 cursor-pointer disabled:opacity-50"
+                    >
+                      {isDeletingBatch ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3.5 h-3.5" />
+                      )}
+                      <span>Hapus ({selectedRowIds.size})</span>
+                    </button>
                   )}
-                </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsRekapEditMode(prev => {
+                        const next = !prev;
+                        if (!next) {
+                          setSelectedRowIds(new Set());
+                          lastTapRef.current = null;
+                        }
+                        return next;
+                      });
+                    }}
+                    title={isRekapEditMode ? 'Kembali ke mode biasa' : 'Mode Edit'}
+                    className={`min-h-[32px] rounded-xl text-[11px] font-medium flex items-center justify-center gap-1 transition-all cursor-pointer shrink-0 ${
+                      isRekapEditMode
+                        ? 'w-8 px-0 neu-btn bg-[#EEF2F6] text-rose-600 hover:text-rose-700 border border-white/90'
+                        : 'px-2.5 py-1 neu-btn bg-[#EEF2F6] text-slate-700 hover:text-blue-700 border border-white/90'
+                    }`}
+                  >
+                    {isRekapEditMode ? (
+                      <X className="w-3.5 h-3.5 stroke-[2.5]" />
+                    ) : (
+                      <>
+                        <Edit3 className="w-3 h-3" />
+                        <span>Edit</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* Kontainer Tabel: Hanya Isi yang Bisa Discroll Vertikal, Tanpa Scroll Horizontal */}
@@ -1928,11 +2012,11 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
                             rowSpan: 1,
                             isFirstOfDate: true,
                           };
-                          const isRowLongPressed = isRekapEditMode && longPressedRowId === recId;
+                          const isRowSelected = isRekapEditMode && selectedRowIds.has(recId);
 
                           const renderEditModeActions = () => {
                             if (!isRekapEditMode) return null;
-                            if (isRowLongPressed) {
+                            if (isRowSelected) {
                               return (
                                 <button
                                   type="button"
@@ -1940,11 +2024,15 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
                                     e.stopPropagation();
                                     handleDeleteRecord(recId);
                                   }}
-                                  disabled={deletingId === recId}
+                                  disabled={deletingId === recId || isDeletingBatch}
                                   title="Hapus Baris"
-                                  className="shrink-0 w-6 h-6 rounded-lg bg-rose-600 text-white flex items-center justify-center shadow-xs active:scale-95 cursor-pointer"
+                                  className="shrink-0 w-6 h-6 rounded-lg bg-rose-600 text-white flex items-center justify-center shadow-xs active:scale-95 cursor-pointer disabled:opacity-50"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
+                                  {deletingId === recId ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  )}
                                 </button>
                               );
                             }
@@ -1966,26 +2054,21 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
                           return (
                             <tr
                               key={recId}
-                              onClick={() => {
-                                if (isRekapEditMode && longPressedRowId && longPressedRowId !== recId) {
-                                  setLongPressedRowId(null);
-                                }
-                              }}
-                              onMouseDown={() => handleRowPressStart(recId)}
-                              onMouseUp={handleRowPressEnd}
-                              onMouseLeave={handleRowPressEnd}
-                              onTouchStart={() => handleRowPressStart(recId)}
-                              onTouchEnd={handleRowPressEnd}
-                              onContextMenu={e => {
-                                if (!isRekapEditMode) return;
-                                e.preventDefault();
-                                setLongPressedRowId(prev => (prev === recId ? null : recId));
-                              }}
+                              onClick={() => handleRowClick(recId)}
+                              title={
+                                isRekapEditMode
+                                  ? selectedRowIds.size > 0
+                                    ? isRowSelected
+                                      ? 'Ketuk 1x untuk batal pilih'
+                                      : 'Ketuk 1x untuk memilih'
+                                    : 'Tekan 2x untuk mulai memilih hapus'
+                                  : undefined
+                              }
                               className={`border-b border-slate-300/70 transition-colors ${
-                                isRowLongPressed
-                                  ? 'bg-rose-50/95'
+                                isRowSelected
+                                  ? 'bg-rose-50/95 ring-1 ring-inset ring-rose-300/60'
                                   : isRekapEditMode
-                                  ? 'hover:bg-blue-50/70'
+                                  ? 'hover:bg-blue-50/70 cursor-pointer select-none touch-manipulation'
                                   : 'hover:bg-white/40'
                               }`}
                             >
