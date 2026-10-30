@@ -35,7 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'absensi', label: 'Entri Presensi', icon: CalendarCheck },
     { id: 'nilai', label: 'Input Nilai', icon: Award },
     { id: 'lkh', label: 'Jurnal LKH', icon: FileEdit },
-    { id: 'laporan', label: 'Export Laporan', icon: FileSpreadsheet },
+    { id: 'laporan', label: 'Export', icon: FileSpreadsheet },
   ];
 
   return (

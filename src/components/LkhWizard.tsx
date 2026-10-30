@@ -25,11 +25,6 @@ import {
 } from 'lucide-react';
 import { LkhRecord, PengajaranItem, ReferencesMap, User } from '../types';
 import { callGasApi, DEFAULT_REFERENCES } from '../services/gasApi';
-import {
-  exportLkhOfficialPdf,
-  buildOfficialLkhFilename,
-  resolvePrimaryMapelName,
-} from '../utils/lkhExportDocument';
 
 interface LkhWizardProps {
   token: string;
@@ -1245,16 +1240,6 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
     return found ? found.name : rekapMapelFilter;
   }, [rekapMapelFilter, rekapMapelOptions]);
 
-  // Sinkronkan tahun terpilih ketika rekapStartDate berubah
-  useEffect(() => {
-    if (rekapStartDate) {
-      const y = parseInt(rekapStartDate.slice(0, 4), 10);
-      if (!isNaN(y)) {
-        setRekapSelectedYear(y);
-      }
-    }
-  }, [rekapStartDate]);
-
   // Handler Pemilihan Bulan dari Modal Kotak Bulan (Preview Otomatis & Default Mapel: Semua)
   const handleSelectMonth = (monthIndex: number) => {
     const year = rekapSelectedYear;
@@ -1302,44 +1287,6 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
 
     return `${formatShortDateId(startNorm)} - ${formatShortDateId(endNorm)}`;
   }, [rekapStartDate, rekapEndDate]);
-
-  // Ekspor Dokumen LKH PDF Resmi langsung dari Panel Rekap LKH
-  const handleExportPdfFromRekap = () => {
-    if (previewFilteredRecords.length === 0) {
-      showToast('Tidak ada data jurnal LKH untuk dicetak.', 'warning');
-      return;
-    }
-    const startNorm = rekapStartDate <= rekapEndDate ? rekapStartDate : rekapEndDate;
-    const endNorm = rekapStartDate <= rekapEndDate ? rekapEndDate : rekapStartDate;
-
-    const primaryMapel = resolvePrimaryMapelName({
-      pengajaranList,
-      references,
-      currentUser,
-      lkhRecords: previewFilteredRecords,
-    });
-
-    const filename = buildOfficialLkhFilename({
-      currentUser,
-      startDate: startNorm,
-      endDate: endNorm,
-      format: 'pdf',
-    });
-
-    try {
-      exportLkhOfficialPdf({
-        filename,
-        startDate: startNorm,
-        endDate: endNorm,
-        currentUser,
-        primaryMapelName: primaryMapel,
-        records: previewFilteredRecords,
-      });
-      showToast(`Dokumen ${filename} berhasil diunduh.`, 'success');
-    } catch {
-      showToast('Gagal membuat dokumen PDF LKH.', 'error');
-    }
-  };
 
   // Hasil Filter Data 09_LKH untuk Tabel Preview Rekap LKH (Diurutkan berdasarkan Tanggal & JamKe)
   const previewFilteredRecords = useMemo(() => {
@@ -1942,7 +1889,10 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
 
               <button
                 type="button"
-                onClick={() => setActiveModal('rekapMonthPicker')}
+                onClick={() => {
+                  setRekapSelectedYear(new Date().getFullYear());
+                  setActiveModal('rekapMonthPicker');
+                }}
                 className="w-full max-w-xs min-h-[44px] py-2.5 px-5 rounded-2xl neu-btn-primary text-white text-xs font-medium flex items-center justify-center gap-2 transition-all active:scale-97 cursor-pointer"
               >
                 <CalendarDays className="w-4 h-4" />
@@ -1960,7 +1910,10 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
                     {/* Chip Bulan Terpilih */}
                     <button
                       type="button"
-                      onClick={() => setActiveModal('rekapMonthPicker')}
+                      onClick={() => {
+                        setRekapSelectedYear(new Date().getFullYear());
+                        setActiveModal('rekapMonthPicker');
+                      }}
                       title="Ubah Bulan Rekap"
                       className="min-h-[32px] px-2.5 py-1 rounded-xl text-xs font-semibold neu-btn bg-[#EEF2F6] text-blue-700 hover:text-blue-800 border-2 border-blue-400/80 flex items-center gap-1.5 cursor-pointer shrink-0 transition-all active:scale-95 shadow-xs"
                     >
@@ -1982,19 +1935,9 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
                     </button>
                   </div>
 
-                  {/* Tombol Aksi: Cetak PDF, Hapus Batch, Edit Mode */}
+                  {/* Tombol Aksi: Hapus Batch & Edit Mode */}
                   <div className="flex items-center gap-1.5 shrink-0">
-                    {/* Tombol Cetak PDF Resmi */}
-                    <button
-                      type="button"
-                      onClick={handleExportPdfFromRekap}
-                      title="Cetak Dokumen LKH PDF Resmi"
-                      className="min-h-[32px] px-2.5 py-1 rounded-xl text-[11px] font-medium neu-btn bg-[#EEF2F6] text-blue-700 hover:text-blue-800 border border-white/90 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
-                    >
-                      <FileText className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Cetak PDF</span>
-                    </button>
-
+                    
                     {isRekapEditMode && selectedRowIds.size > 1 && (
                       <button
                         type="button"

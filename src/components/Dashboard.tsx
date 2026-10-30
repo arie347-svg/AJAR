@@ -58,7 +58,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ currentUser, data, onNavig
     },
     {
       id: 'laporan' as PageId,
-      label: 'Laporan',
+      label: 'Export',
       sub: 'Export Rekap',
       icon: FileSpreadsheet,
       iconBg: 'bg-rose-50 border-rose-200/70 text-[#E11D48]',

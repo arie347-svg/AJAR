@@ -23,7 +23,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     { id: 'absensi', label: 'Presensi', icon: CalendarCheck },
     { id: 'nilai', label: 'Nilai', icon: Award },
     { id: 'lkh', label: 'LKH', icon: FileEdit },
-    { id: 'laporan', label: 'Laporan', icon: FileSpreadsheet },
+    { id: 'laporan', label: 'Export', icon: FileSpreadsheet },
   ];
 
   return (

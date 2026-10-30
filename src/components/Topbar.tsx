@@ -21,7 +21,7 @@ export const Topbar: React.FC<TopbarProps> = ({ activePage, onNavigate, onLogout
     absensi: 'Presensi Siswa',
     nilai: 'Penilaian Siswa',
     lkh: 'Jurnal LKH',
-    laporan: 'Export Laporan',
+    laporan: 'Export',
   };
 
   const isDashboard = activePage === 'dashboard';

@@ -45,7 +45,37 @@ interface LaporanProps {
 
 type ReportCategory = 'presensi' | 'nilai' | 'lkh';
 type FileFormat = 'pdf' | 'word' | 'excel';
-type ActiveSubModal = null | 'rangeDate' | 'filterSelector';
+type ActiveSubModal = null | 'rangeDate' | 'filterSelector' | 'monthPicker';
+
+const MONTH_NAMES_ID = [
+  'Januari',
+  'Februari',
+  'Maret',
+  'April',
+  'Mei',
+  'Juni',
+  'Juli',
+  'Agustus',
+  'September',
+  'Oktober',
+  'November',
+  'Desember',
+];
+
+const MONTH_BOXES = [
+  { idx: 0, label: 'JAN' },
+  { idx: 1, label: 'FEB' },
+  { idx: 2, label: 'MAR' },
+  { idx: 3, label: 'APR' },
+  { idx: 4, label: 'MEI' },
+  { idx: 5, label: 'JUN' },
+  { idx: 6, label: 'JUL' },
+  { idx: 7, label: 'AGU' },
+  { idx: 8, label: 'SEP' },
+  { idx: 9, label: 'OKT' },
+  { idx: 10, label: 'NOV' },
+  { idx: 11, label: 'DES' },
+];
 
 const SHORT_MONTH_NAMES_ID = [
   'Jan',
@@ -410,6 +440,52 @@ export const Laporan: React.FC<LaporanProps> = ({
     return Array.from(map.entries()).map(([id, label]) => ({ id, label }));
   }, [pengajaranList, lkhRecords, mapelRefList]);
 
+  // Tahun terpilih untuk modal Bulan LKH
+  const [selectedYear, setSelectedYear] = useState<number>(() => new Date().getFullYear());
+
+  const handleSelectMonth = (monthIndex: number) => {
+    const year = selectedYear;
+    const startStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-01`;
+    const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+    const endStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+    setStartDate(startStr);
+    setEndDate(endStr);
+    setActiveSubModal(null);
+  };
+
+  const lkhPeriodDisplayLabel = useMemo(() => {
+    if (!startDate || !endDate) return 'Pilih Bulan';
+    const startNorm = startDate <= endDate ? startDate : endDate;
+    const endNorm = startDate <= endDate ? endDate : startDate;
+
+    const mStart = startNorm.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    const mEnd = endNorm.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+    if (mStart && mEnd) {
+      const yearStart = parseInt(mStart[1], 10);
+      const monthStart = parseInt(mStart[2], 10) - 1;
+      const dayStart = parseInt(mStart[3], 10);
+
+      const yearEnd = parseInt(mEnd[1], 10);
+      const monthEnd = parseInt(mEnd[2], 10) - 1;
+      const dayEnd = parseInt(mEnd[3], 10);
+
+      const lastDayOfStartMonth = new Date(yearStart, monthStart + 1, 0).getDate();
+
+      if (
+        yearStart === yearEnd &&
+        monthStart === monthEnd &&
+        dayStart === 1 &&
+        dayEnd === lastDayOfStartMonth
+      ) {
+        return `${MONTH_NAMES_ID[monthStart]} ${yearStart}`;
+      }
+    }
+
+    return `${formatShortDateId(startNorm)} - ${formatShortDateId(endNorm)}`;
+  }, [startDate, endDate]);
+
   // Himpunan Tanggal Tersedia dari 09_LKH milik Guru
   const availableLkhDatesSet = useMemo(() => {
     const set = new Set<string>();
@@ -439,7 +515,8 @@ export const Laporan: React.FC<LaporanProps> = ({
     setActiveCategoryModal(category);
     setActiveSubModal(null);
     setSelectedFormat(null);
-    setSelectedFilterId('');
+    setSelectedFilterId(category === 'lkh' ? 'ALL' : '');
+    if (category === 'lkh') setSelectedYear(new Date().getFullYear());
     setStartDate('');
     setEndDate('');
 
@@ -1125,10 +1202,17 @@ export const Laporan: React.FC<LaporanProps> = ({
 
             {/* Pilihan Filter: Rentang Tanggal & Kelas/Mata Pelajaran (atau Mata Pelajaran untuk LKH) */}
             <div className="space-y-3">
-              {/* TOMBOL 1: RENTANG TANGGAL */}
+              {/* TOMBOL 1: BULAN (untuk LKH) ATAU RENTANG TANGGAL (untuk Presensi/Nilai) */}
               <button
                 type="button"
-                onClick={handleOpenRangeDateModal}
+                onClick={() => {
+                  if (activeCategoryModal === 'lkh') {
+                    setSelectedYear(new Date().getFullYear());
+                    setActiveSubModal('monthPicker');
+                  } else {
+                    handleOpenRangeDateModal();
+                  }
+                }}
                 className={`w-full min-h-[54px] px-4 py-2.5 rounded-2xl neu-btn bg-[#EEF2F6] flex items-center justify-between gap-3 text-left cursor-pointer transition-all ${
                   isRangeSelected
                     ? 'border-2 border-blue-400/80'
@@ -1141,14 +1225,16 @@ export const Laporan: React.FC<LaporanProps> = ({
                   </div>
                   <div className="min-w-0">
                     <span className="block text-xs font-semibold text-[#0D162B]">
-                      Rentang Tanggal
+                      {activeCategoryModal === 'lkh' ? 'Bulan' : 'Rentang Tanggal'}
                     </span>
                     <span
                       className={`block text-[11px] font-mono tabular-nums truncate mt-0.5 ${
                         isRangeSelected ? 'text-blue-700 font-medium' : 'text-slate-400'
                       }`}
                     >
-                      {isRangeSelected
+                      {activeCategoryModal === 'lkh'
+                        ? lkhPeriodDisplayLabel
+                        : isRangeSelected
                         ? `${formatShortDateId(startDate)} - ${formatShortDateId(endDate)}`
                         : 'Pilih Rentang Tanggal'}
                     </span>
@@ -1280,6 +1366,113 @@ export const Laporan: React.FC<LaporanProps> = ({
       )}
 
       {/* ========================================================================= */}
+            {/* SUB-MODAL MENGAMBANG: PILIH BULAN (KHUSUS LKH) */}
+      {activeSubModal === 'monthPicker' && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setActiveSubModal(null)}
+          className="fixed inset-0 z-50 bg-slate-900/35 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className="w-full max-w-xs sm:max-w-sm neu-raised-card bg-[#EEF2F6] rounded-3xl p-4 sm:p-5 border border-white/90 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150"
+          >
+            {/* Header Modal */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg neu-pressed bg-[#E8EEF6] text-blue-600 flex items-center justify-center">
+                  <CalendarDays className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-semibold text-[#0D162B]">
+                  Pilih Bulan LKH
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveSubModal(null)}
+                className="w-8 h-8 rounded-xl neu-btn bg-[#EEF2F6] flex items-center justify-center text-slate-500 hover:text-slate-800 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Filter Tahun (Atas) */}
+            <div className="neu-pressed bg-[#E8EEF6] p-2 rounded-2xl border border-white/80 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setSelectedYear(prev => prev - 1)}
+                className="w-8 h-8 rounded-xl neu-btn bg-[#EEF2F6] flex items-center justify-center text-slate-700 hover:text-blue-700 cursor-pointer transition-all active:scale-95"
+                title="Tahun Sebelumnya"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-medium text-slate-500">Tahun</span>
+                <span className="text-sm font-semibold text-[#0D162B] font-mono tabular-nums">
+                  {selectedYear}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedYear(prev => prev + 1)}
+                className="w-8 h-8 rounded-xl neu-btn bg-[#EEF2F6] flex items-center justify-center text-slate-700 hover:text-blue-700 cursor-pointer transition-all active:scale-95"
+                title="Tahun Berikutnya"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Grid 12 Kotak Bulan (JAN - DES) */}
+            <div className="grid grid-cols-3 gap-2.5">
+              {MONTH_BOXES.map(({ idx, label }) => {
+                const ymKey = `${selectedYear}-${String(idx + 1).padStart(2, '0')}`;
+                const hasData = availableYearMonths.includes(ymKey);
+                const isSelected =
+                  startDate.startsWith(ymKey) && endDate.startsWith(ymKey);
+
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => handleSelectMonth(idx)}
+                    className={`min-h-[46px] p-2 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all cursor-pointer active:scale-95 ${
+                      isSelected
+                        ? 'neu-btn-primary text-white font-semibold shadow-xs'
+                        : hasData
+                        ? 'neu-btn bg-[#EEF2F6] text-[#0D162B] font-semibold border-2 border-blue-400/80 hover:bg-blue-50/50'
+                        : 'neu-btn bg-[#EEF2F6] text-slate-600 font-medium border border-white/90 hover:text-blue-700'
+                    }`}
+                  >
+                    <span className="font-mono text-xs tracking-wider">{label}</span>
+                    {hasData && (
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          isSelected ? 'bg-white' : 'bg-emerald-500'
+                        }`}
+                        title="Terdapat data jurnal"
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Tombol Rentang Tanggal (Bawah) */}
+            <div className="pt-1 border-t border-slate-200/80">
+              <button
+                type="button"
+                onClick={handleOpenRangeDateModal}
+                className="w-full min-h-[40px] px-3.5 py-2 rounded-2xl neu-btn bg-[#EEF2F6] text-xs font-medium text-slate-700 hover:text-blue-700 border border-white/90 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98"
+              >
+                <CalendarDays className="w-3.5 h-3.5 text-blue-600" />
+                <span>Rentang Tanggal Khusus</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* SUB-MODAL 1: RENTANG TANGGAL (2 SISI KALENDER SAMA SEPERTI REKAP LKH)     */}
       {/* ========================================================================= */}
       {activeSubModal === 'rangeDate' && (
