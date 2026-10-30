@@ -94,6 +94,21 @@ const SHORT_MONTH_NAMES_ID = [
   'Des',
 ];
 
+const MONTH_BOXES = [
+  { idx: 0, label: 'JAN' },
+  { idx: 1, label: 'FEB' },
+  { idx: 2, label: 'MAR' },
+  { idx: 3, label: 'APR' },
+  { idx: 4, label: 'MEI' },
+  { idx: 5, label: 'JUN' },
+  { idx: 6, label: 'JUL' },
+  { idx: 7, label: 'AGU' },
+  { idx: 8, label: 'SEP' },
+  { idx: 9, label: 'OKT' },
+  { idx: 10, label: 'NOV' },
+  { idx: 11, label: 'DES' },
+];
+
 const DAY_HEADERS_ID = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
 const DAY_NAMES_ID = [
@@ -464,7 +479,8 @@ type ActiveFloatingModal =
   | 'uraian'
   | 'hasil'
   | 'rekapRangeDate'
-  | 'rekapMapelFilter';
+  | 'rekapMapelFilter'
+  | 'rekapMonthPicker';
 
 export const LkhWizard: React.FC<LkhWizardProps> = ({
   token,
@@ -538,6 +554,7 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
   const [rekapMapelFilter, setRekapMapelFilter] = useState<string>(''); // '' (belum ditentukan), 'ALL' (Semua), atau MataPelajaranID
   const [isRekapPreviewed, setIsRekapPreviewed] = useState<boolean>(false);
   const [isRekapEditMode, setIsRekapEditMode] = useState<boolean>(false);
+  const [rekapSelectedYear, setRekapSelectedYear] = useState<number>(() => new Date().getFullYear());
 
   // State Kalender 2 Sisi untuk Filter Rentang Tanggal Rekap LKH
   const [leftCalView, setLeftCalView] = useState<{ year: number; month: number }>(() => {
@@ -1228,6 +1245,64 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
     return found ? found.name : rekapMapelFilter;
   }, [rekapMapelFilter, rekapMapelOptions]);
 
+  // Sinkronkan tahun terpilih ketika rekapStartDate berubah
+  useEffect(() => {
+    if (rekapStartDate) {
+      const y = parseInt(rekapStartDate.slice(0, 4), 10);
+      if (!isNaN(y)) {
+        setRekapSelectedYear(y);
+      }
+    }
+  }, [rekapStartDate]);
+
+  // Handler Pemilihan Bulan dari Modal Kotak Bulan (Preview Otomatis & Default Mapel: Semua)
+  const handleSelectMonth = (monthIndex: number) => {
+    const year = rekapSelectedYear;
+    const startStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-01`;
+    const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+    const endStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+    setRekapStartDate(startStr);
+    setRekapEndDate(endStr);
+    setRekapMapelFilter('ALL'); // Default Mata Pelajaran: Semua
+    setIsRekapPreviewed(true);  // Langsung tampilkan preview tabel
+    setActiveModal(null);       // Tutup modal
+  };
+
+  // Label Periode Rekap LKH (Bulan & Tahun atau Rentang Tanggal Khusus)
+  const rekapPeriodDisplayLabel = useMemo(() => {
+    if (!rekapStartDate || !rekapEndDate) return 'Pilih Bulan';
+    const startNorm = rekapStartDate <= rekapEndDate ? rekapStartDate : rekapEndDate;
+    const endNorm = rekapStartDate <= rekapEndDate ? rekapEndDate : rekapStartDate;
+
+    const mStart = startNorm.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    const mEnd = endNorm.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+    if (mStart && mEnd) {
+      const yearStart = parseInt(mStart[1], 10);
+      const monthStart = parseInt(mStart[2], 10) - 1;
+      const dayStart = parseInt(mStart[3], 10);
+
+      const yearEnd = parseInt(mEnd[1], 10);
+      const monthEnd = parseInt(mEnd[2], 10) - 1;
+      const dayEnd = parseInt(mEnd[3], 10);
+
+      const lastDayOfStartMonth = new Date(yearStart, monthStart + 1, 0).getDate();
+
+      // Jika sama-sama dalam 1 bulan penuh (tgl 1 s/d tgl terakhir)
+      if (
+        yearStart === yearEnd &&
+        monthStart === monthEnd &&
+        dayStart === 1 &&
+        dayEnd === lastDayOfStartMonth
+      ) {
+        return `${MONTH_NAMES_ID[monthStart]} ${yearStart}`;
+      }
+    }
+
+    return `${formatShortDateId(startNorm)} - ${formatShortDateId(endNorm)}`;
+  }, [rekapStartDate, rekapEndDate]);
+
   // Ekspor Dokumen LKH PDF Resmi langsung dari Panel Rekap LKH
   const handleExportPdfFromRekap = () => {
     if (previewFilteredRecords.length === 0) {
@@ -1849,129 +1924,95 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
         /* 3. TAB 2: PANEL "REKAP LKH" (Sesuai Data Sheet 09_LKH UserID Guru)        */
         /* ========================================================================= */
         <div className="flex-1 min-h-0 flex flex-col gap-2.5 overflow-hidden">
-          {/* BAR FILTER: RENTANG TGL (Kiri) & MATA PELAJARAN (Kanan) */}
-          <div className="grid grid-cols-2 gap-2.5 shrink-0">
-            {/* Tombol Filter Rentang Tgl (Klik -> Muncul 2 Sisi Kalender Fullscreen Tanpa Scroll Vertikal) */}
-            <button
-              type="button"
-              onClick={handleOpenRekapRangeModal}
-              className={`min-h-[48px] px-3.5 py-2 rounded-2xl neu-btn bg-[#EEF2F6] flex items-center justify-between gap-2 text-left cursor-pointer transition-all ${
-                isRangeDateSelected
-                  ? 'border-2 border-blue-400/80'
-                  : 'border border-white/90'
-              }`}
-            >
-              <div className="min-w-0">
-                <span className="block text-[11px] font-semibold text-[#0D162B]">
-                  Rentang Tgl
-                </span>
-                <span
-                  className={`block text-[10.5px] font-mono tabular-nums truncate ${
-                    isRangeDateSelected ? 'text-blue-700 font-medium' : 'text-slate-400'
-                  }`}
-                >
-                  {isRangeDateSelected
-                    ? `${formatShortDateId(rekapStartDate)} - ${formatShortDateId(rekapEndDate)}`
-                    : loadingHistory
-                    ? 'Memuat 09_LKH...'
-                    : 'Pilih Rentang'}
-                </span>
-              </div>
-              {isRangeDateSelected && (
-                <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
-                  <Check className="w-3 h-3 stroke-[3]" />
-                </span>
-              )}
-            </button>
-
-            {/* Tombol Filter Mata Pelajaran (Semua + List Mata Pelajaran Saja) */}
-            <button
-              type="button"
-              onClick={() => setActiveModal('rekapMapelFilter')}
-              className={`min-h-[48px] px-3.5 py-2 rounded-2xl neu-btn bg-[#EEF2F6] flex items-center justify-between gap-2 text-left cursor-pointer transition-all ${
-                isMapelFilterSelected
-                  ? 'border-2 border-blue-400/80'
-                  : 'border border-white/90'
-              }`}
-            >
-              <div className="min-w-0">
-                <span className="block text-[11px] font-semibold text-[#0D162B]">
-                  Mata Pelajaran
-                </span>
-                <span
-                  className={`block text-[11px] truncate ${
-                    isMapelFilterSelected ? 'text-blue-700 font-medium' : 'text-slate-400'
-                  }`}
-                >
-                  {rekapMapelFilterLabel}
-                </span>
-              </div>
-              {isMapelFilterSelected && (
-                <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
-                  <Check className="w-3 h-3 stroke-[3]" />
-                </span>
-              )}
-            </button>
-          </div>
-
           {/* KONTEN REKAP LKH: SEBELUM PREVIEW VS SESUDAH PREVIEW */}
           {!isRekapPreviewed ? (
             <div className="flex-1 neu-raised-card bg-[#EEF2F6] rounded-3xl p-6 border border-white/90 flex flex-col items-center justify-center text-center gap-5">
               <div className="w-14 h-14 rounded-2xl neu-pressed bg-[#E8EEF6] text-blue-600 flex items-center justify-center border border-white/80">
-                <Filter className="w-6 h-6 stroke-[2]" />
+                <CalendarDays className="w-6 h-6 stroke-[2]" />
               </div>
 
               <div className="space-y-1">
                 <p className="text-sm font-semibold text-[#0D162B]">
-                  Tentukan filter
+                  Rekap Laporan Kinerja Harian
                 </p>
                 <p className="text-xs text-slate-500 font-normal max-w-xs">
-                  Pilih Rentang Tgl dan Mata Pelajaran di atas untuk menampilkan tabel Rekap LKH.
+                  Pilih bulan untuk menampilkan tabel rekap LKH guru.
                 </p>
               </div>
 
               <button
                 type="button"
-                disabled={!isRekapFilterReady}
-                onClick={() => setIsRekapPreviewed(true)}
-                className="w-full max-w-xs min-h-[44px] py-2.5 px-5 rounded-2xl neu-btn-primary text-white text-xs font-medium flex items-center justify-center gap-2 transition-all active:scale-97 disabled:opacity-45 cursor-pointer"
+                onClick={() => setActiveModal('rekapMonthPicker')}
+                className="w-full max-w-xs min-h-[44px] py-2.5 px-5 rounded-2xl neu-btn-primary text-white text-xs font-medium flex items-center justify-center gap-2 transition-all active:scale-97 cursor-pointer"
               >
-                <Eye className="w-4 h-4" />
-                <span>Preview</span>
+                <CalendarDays className="w-4 h-4" />
+                <span>Pilih Bulan</span>
               </button>
             </div>
           ) : (
             /* TABEL REKAP LKH: 6 Kolom (No, Tgl, Jam Ke, Kelas, Uraian, Hasil) Tanpa Paraf & Tanpa Scroll Horizontal */
             <div className="flex-1 min-h-0 neu-raised-card bg-[#EEF2F6] rounded-3xl p-2.5 sm:p-3.5 border border-white/90 flex flex-col gap-2 overflow-hidden">
-              {/* Toolbar Atas Tabel: Info & Tombol Edit */}
-              <div className="shrink-0 flex items-center justify-between gap-2 px-1">
-                <span className="text-[10.5px] text-slate-500 font-normal truncate">
-                  {isRekapEditMode
-                    ? selectedRowIds.size > 0
-                      ? `${selectedRowIds.size} baris dipilih • Ketuk 1x baris untuk pilih/batal`
-                      : `${previewFilteredRecords.length} baris • Tekan 2x baris untuk pilih hapus`
-                    : `${previewFilteredRecords.length} baris jurnal`}
-                </span>
-
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {isRekapEditMode && selectedRowIds.size > 1 && (
+              {/* Toolbar Atas Tabel: Filter Cepat Bulan & Mapel + Aksi */}
+              <div className="shrink-0 flex flex-col gap-1.5 px-0.5">
+                <div className="flex items-center justify-between gap-2">
+                  {/* Filter Cepat: Chip Bulan Terpilih & Chip Mata Pelajaran */}
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-x-auto py-0.5">
+                    {/* Chip Bulan Terpilih */}
                     <button
                       type="button"
-                      onClick={handleDeleteBulkRecords}
-                      disabled={isDeletingBatch}
-                      title={`Hapus ${selectedRowIds.size} baris yang dipilih`}
-                      className="min-h-[32px] px-2.5 py-1 rounded-xl text-[11px] font-medium neu-btn bg-rose-600 text-white hover:bg-rose-700 flex items-center justify-center gap-1.5 shadow-xs active:scale-95 cursor-pointer disabled:opacity-50"
+                      onClick={() => setActiveModal('rekapMonthPicker')}
+                      title="Ubah Bulan Rekap"
+                      className="min-h-[32px] px-2.5 py-1 rounded-xl text-xs font-semibold neu-btn bg-[#EEF2F6] text-blue-700 hover:text-blue-800 border-2 border-blue-400/80 flex items-center gap-1.5 cursor-pointer shrink-0 transition-all active:scale-95 shadow-xs"
                     >
-                      {isDeletingBatch ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-3.5 h-3.5" />
-                      )}
-                      <span>Hapus ({selectedRowIds.size})</span>
+                      <CalendarDays className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">{rekapPeriodDisplayLabel}</span>
                     </button>
-                  )}
 
-                  <button
+                    {/* Chip Mata Pelajaran */}
+                    <button
+                      type="button"
+                      onClick={() => setActiveModal('rekapMapelFilter')}
+                      title="Filter Mata Pelajaran"
+                      className="min-h-[32px] px-2.5 py-1 rounded-xl text-xs font-medium neu-btn bg-[#EEF2F6] text-slate-700 hover:text-blue-700 border border-white/90 flex items-center gap-1.5 cursor-pointer shrink-0 transition-all active:scale-95"
+                    >
+                      <BookOpen className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                      <span className="truncate max-w-[140px] sm:max-w-[200px]">
+                        Mapel: {rekapMapelFilter === 'ALL' || !rekapMapelFilter ? 'Semua' : rekapMapelFilterLabel}
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Tombol Aksi: Cetak PDF, Hapus Batch, Edit Mode */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {/* Tombol Cetak PDF Resmi */}
+                    <button
+                      type="button"
+                      onClick={handleExportPdfFromRekap}
+                      title="Cetak Dokumen LKH PDF Resmi"
+                      className="min-h-[32px] px-2.5 py-1 rounded-xl text-[11px] font-medium neu-btn bg-[#EEF2F6] text-blue-700 hover:text-blue-800 border border-white/90 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Cetak PDF</span>
+                    </button>
+
+                    {isRekapEditMode && selectedRowIds.size > 1 && (
+                      <button
+                        type="button"
+                        onClick={handleDeleteBulkRecords}
+                        disabled={isDeletingBatch}
+                        title={`Hapus ${selectedRowIds.size} baris yang dipilih`}
+                        className="min-h-[32px] px-2.5 py-1 rounded-xl text-[11px] font-medium neu-btn bg-rose-600 text-white hover:bg-rose-700 flex items-center justify-center gap-1.5 shadow-xs active:scale-95 cursor-pointer disabled:opacity-50"
+                      >
+                        {isDeletingBatch ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                        <span>Hapus ({selectedRowIds.size})</span>
+                      </button>
+                    )}
+
+                    <button
                     type="button"
                     onClick={() => {
                       setIsRekapEditMode(prev => {
@@ -1996,9 +2037,21 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
                       <>
                         <Edit3 className="w-3 h-3" />
                         <span>Edit</span>
-                      </>
-                    )}
-                  </button>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Subtitle Info Baris / Mode Edit */}
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-[10px] sm:text-[10.5px] text-slate-500 font-normal truncate">
+                    {isRekapEditMode
+                      ? selectedRowIds.size > 0
+                        ? `${selectedRowIds.size} baris dipilih • Ketuk 1x baris untuk pilih/batal`
+                        : `${previewFilteredRecords.length} baris • Tekan 2x baris untuk pilih hapus`
+                      : `${previewFilteredRecords.length} baris jurnal`}
+                  </span>
                 </div>
               </div>
 
@@ -2133,29 +2186,37 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
                               {/* 3..6. Kolom Jam Ke, Kelas, Uraian, Hasil (Merge sesuai aturan Non-KBM vs KBM, tanpa tulisan [Non-KBM]) */}
                               {isNonKbmRec ? (
                                 !hasJam ? (
-                                  /* Non-KBM & Jam TIDAK dipilih -> Merge dari Jam Ke s/d Hasil (colSpan = 4) */
+                                  /* Non-KBM & Jam TIDAK dipilih -> Merge dari Jam Ke s/d Hasil (colSpan = 4) (Merger Tengah) */
                                   <td
                                     colSpan={4}
-                                    className="py-2 px-1.5 align-top break-words whitespace-normal"
+                                    className="py-2.5 px-3 align-middle text-center break-words whitespace-normal font-normal text-[#0D162B]"
                                   >
-                                    <div className="flex items-start justify-between gap-1.5">
-                                      <span className="flex-1 min-w-0">{uraianVal}</span>
-                                      {renderEditModeActions()}
+                                    <div className="relative flex items-center justify-center min-h-[24px]">
+                                      <span className="text-center">{uraianVal}</span>
+                                      {isRekapEditMode && (
+                                        <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                                          {renderEditModeActions()}
+                                        </div>
+                                      )}
                                     </div>
                                   </td>
                                 ) : (
-                                  /* Non-KBM & Jam DIPILIH -> Jam Ke tampil, lalu Merge dari Kelas s/d Hasil (colSpan = 3) */
+                                  /* Non-KBM & Jam DIPILIH -> Jam Ke tampil, lalu Merge dari Kelas s/d Hasil (colSpan = 3) (Merger Tengah) */
                                   <>
-                                    <td className="py-2 px-1 text-center align-top font-mono tabular-nums border-r border-slate-300/60 break-words whitespace-normal">
+                                    <td className="py-2 px-1 text-center align-middle font-mono tabular-nums border-r border-slate-300/60 break-words whitespace-normal">
                                       {jamKeStr}
                                     </td>
                                     <td
                                       colSpan={3}
-                                      className="py-2 px-1.5 align-top break-words whitespace-normal"
+                                      className="py-2.5 px-3 align-middle text-center break-words whitespace-normal font-normal text-[#0D162B]"
                                     >
-                                      <div className="flex items-start justify-between gap-1.5">
-                                        <span className="flex-1 min-w-0">{uraianVal}</span>
-                                        {renderEditModeActions()}
+                                      <div className="relative flex items-center justify-center min-h-[24px]">
+                                        <span className="text-center">{uraianVal}</span>
+                                        {isRekapEditMode && (
+                                          <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                                            {renderEditModeActions()}
+                                          </div>
+                                        )}
                                       </div>
                                     </td>
                                   </>
@@ -2810,12 +2871,126 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
           <div className="shrink-0 pt-1.5">
             <button
               type="button"
-              onClick={() => setActiveModal(null)}
+              onClick={() => {
+                setActiveModal(null);
+                if (rekapStartDate && rekapEndDate) {
+                  if (!rekapMapelFilter) setRekapMapelFilter('ALL');
+                  setIsRekapPreviewed(true);
+                }
+              }}
               className="w-full min-h-[42px] py-2 rounded-2xl neu-btn-primary text-white text-xs font-medium flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Check className="w-4 h-4" />
               <span>Selesai</span>
             </button>
+          </div>
+        </div>
+      )}
+
+      
+      {/* MODAL MENGAMBANG: PILIH BULAN REKAP LKH */}
+      {activeModal === 'rekapMonthPicker' && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setActiveModal(null)}
+          className="fixed inset-0 z-50 bg-slate-900/35 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className="w-full max-w-xs sm:max-w-sm neu-raised-card bg-[#EEF2F6] rounded-3xl p-4 sm:p-5 border border-white/90 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150"
+          >
+            {/* Header Modal */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg neu-pressed bg-[#E8EEF6] text-blue-600 flex items-center justify-center">
+                  <CalendarDays className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-semibold text-[#0D162B]">
+                  Pilih Bulan Rekap LKH
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveModal(null)}
+                className="w-8 h-8 rounded-xl neu-btn bg-[#EEF2F6] flex items-center justify-center text-slate-500 hover:text-slate-800 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Filter Tahun (Atas) */}
+            <div className="neu-pressed bg-[#E8EEF6] p-2 rounded-2xl border border-white/80 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setRekapSelectedYear(prev => prev - 1)}
+                className="w-8 h-8 rounded-xl neu-btn bg-[#EEF2F6] flex items-center justify-center text-slate-700 hover:text-blue-700 cursor-pointer transition-all active:scale-95"
+                title="Tahun Sebelumnya"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-medium text-slate-500">Tahun</span>
+                <span className="text-sm font-semibold text-[#0D162B] font-mono tabular-nums">
+                  {rekapSelectedYear}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRekapSelectedYear(prev => prev + 1)}
+                className="w-8 h-8 rounded-xl neu-btn bg-[#EEF2F6] flex items-center justify-center text-slate-700 hover:text-blue-700 cursor-pointer transition-all active:scale-95"
+                title="Tahun Berikutnya"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Grid 12 Kotak Bulan (JAN - DES) */}
+            <div className="grid grid-cols-3 gap-2.5">
+              {MONTH_BOXES.map(({ idx, label }) => {
+                const ymKey = `${rekapSelectedYear}-${String(idx + 1).padStart(2, '0')}`;
+                const hasData = availableYearMonths.includes(ymKey);
+                const isSelected =
+                  rekapStartDate.startsWith(ymKey) && rekapEndDate.startsWith(ymKey);
+
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => handleSelectMonth(idx)}
+                    className={`min-h-[46px] p-2 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all cursor-pointer active:scale-95 ${
+                      isSelected
+                        ? 'neu-btn-primary text-white font-semibold shadow-xs'
+                        : hasData
+                        ? 'neu-btn bg-[#EEF2F6] text-[#0D162B] font-semibold border-2 border-blue-400/80 hover:bg-blue-50/50'
+                        : 'neu-btn bg-[#EEF2F6] text-slate-600 font-medium border border-white/90 hover:text-blue-700'
+                    }`}
+                  >
+                    <span className="font-mono text-xs tracking-wider">{label}</span>
+                    {hasData && (
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          isSelected ? 'bg-white' : 'bg-emerald-500'
+                        }`}
+                        title="Terdapat data jurnal"
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Tombol Rentang Tanggal (Bawah) */}
+            <div className="pt-1 border-t border-slate-200/80">
+              <button
+                type="button"
+                onClick={handleOpenRekapRangeModal}
+                className="w-full min-h-[40px] px-3.5 py-2 rounded-2xl neu-btn bg-[#EEF2F6] text-xs font-medium text-slate-700 hover:text-blue-700 border border-white/90 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98"
+              >
+                <CalendarDays className="w-3.5 h-3.5 text-blue-600" />
+                <span>Rentang Tanggal Khusus</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -2851,7 +3026,7 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
                 type="button"
                 onClick={() => {
                   setRekapMapelFilter('ALL');
-                  setIsRekapPreviewed(false);
+                  setIsRekapPreviewed(true);
                   setActiveModal(null);
                 }}
                 className={`w-full min-h-[42px] px-3.5 py-2 rounded-xl text-xs flex items-center justify-between gap-2 transition-all cursor-pointer text-left ${
@@ -2881,7 +3056,7 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
                     type="button"
                     onClick={() => {
                       setRekapMapelFilter(item.id);
-                      setIsRekapPreviewed(false);
+                      setIsRekapPreviewed(true);
                       setActiveModal(null);
                     }}
                     className={`w-full min-h-[42px] px-3.5 py-2 rounded-xl text-xs flex items-center justify-between gap-2 transition-all cursor-pointer text-left ${

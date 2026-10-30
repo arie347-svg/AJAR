@@ -1041,12 +1041,12 @@ export function exportLkhOfficialPdf(options: OfficialLkhExportOptions): void {
 
     if (row.isNonKbm) {
       if (!row.hasJamKe) {
-        // Non-KBM tanpa Jam Ke: merge melintasi JAM KE- s/d HASIL (colSpan = 4)
+        // Non-KBM tanpa Jam Ke: merge melintasi JAM KE- s/d HASIL (colSpan = 4) - RATA TENGAH
         cells.push({
           content: row.mergedNonKbmText,
           colSpan: 4,
           styles: {
-            halign: 'left',
+            halign: 'center',
             valign: 'middle',
             fontStyle: 'normal',
           },
@@ -1061,7 +1061,7 @@ export function exportLkhOfficialPdf(options: OfficialLkhExportOptions): void {
           content: row.mergedNonKbmText,
           colSpan: 3,
           styles: {
-            halign: 'left',
+            halign: 'center',
             valign: 'top',
             fontStyle: 'normal',
           },
@@ -1312,10 +1312,10 @@ export function exportLkhOfficialWord(options: OfficialLkhExportOptions): void {
       }
       if (row.isNonKbm) {
         if (!row.hasJamKe) {
-          rowsHtml += `<td colspan="4" style="text-align:left;vertical-align:middle;">${row.mergedNonKbmText}</td>`;
+          rowsHtml += `<td colspan="4" style="text-align:center;vertical-align:middle;">${row.mergedNonKbmText}</td>`;
         } else {
           rowsHtml += `<td style="text-align:center;vertical-align:top;">${row.jamKeDisplay}</td>`;
-          rowsHtml += `<td colspan="3" style="text-align:left;vertical-align:top;">${row.mergedNonKbmText}</td>`;
+          rowsHtml += `<td colspan="3" style="text-align:center;vertical-align:middle;">${row.mergedNonKbmText}</td>`;
         }
       } else {
         rowsHtml += `<td style="text-align:center;vertical-align:top;">${row.jamKeDisplay}</td>`;
