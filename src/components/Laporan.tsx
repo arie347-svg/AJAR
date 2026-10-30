@@ -28,6 +28,7 @@ import {
 import { callGasApi, DEFAULT_REFERENCES } from '../services/gasApi';
 import {
   resolvePrimaryMapelName,
+  buildOfficialLkhFilename,
   exportLkhOfficialPdf,
   exportLkhOfficialWord,
   exportLkhOfficialExcel,
@@ -509,15 +510,25 @@ export const Laporan: React.FC<LaporanProps> = ({
   // Presensi: Presensi_Kelas/Mata Pelajaran_RentangTgl.<ext>
   // Nilai: Nilai_Kelas/Mata Pelajaran_RentangTgl.<ext>
   // LKH: LKH_Mata Pelajaran_RentangTgl.<ext>
-  const generatedFilename = useMemo(() => {
+    const generatedFilename = useMemo(() => {
     if (!activeCategoryModal || !selectedFormat) return '';
+
+    // Untuk LKH: gunakan pola nama resmi acuan MAN 1 Majalengka (LKH_[NamaGuru]_[RentangTgl].[ext])
+    if (activeCategoryModal === 'lkh') {
+      const startNorm = startDate <= endDate ? startDate : endDate;
+      const endNorm = startDate <= endDate ? endDate : startDate;
+      return buildOfficialLkhFilename({
+        currentUser,
+        startDate: startNorm,
+        endDate: endNorm,
+        format: selectedFormat === 'word' ? 'word' : selectedFormat === 'excel' ? 'excel' : 'pdf',
+      });
+    }
 
     const prefix =
       activeCategoryModal === 'presensi'
         ? 'Presensi'
-        : activeCategoryModal === 'nilai'
-        ? 'Nilai'
-        : 'LKH';
+        : 'Nilai';
 
     const cleanFilterPart = (selectedFilterDisplayLabel || 'Semua')
       .replace(/\s*\/\s*/g, '-')

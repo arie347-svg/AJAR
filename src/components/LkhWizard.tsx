@@ -25,6 +25,11 @@ import {
 } from 'lucide-react';
 import { LkhRecord, PengajaranItem, ReferencesMap, User } from '../types';
 import { callGasApi, DEFAULT_REFERENCES } from '../services/gasApi';
+import {
+  exportLkhOfficialPdf,
+  buildOfficialLkhFilename,
+  resolvePrimaryMapelName,
+} from '../utils/lkhExportDocument';
 
 interface LkhWizardProps {
   token: string;
@@ -1222,6 +1227,44 @@ export const LkhWizard: React.FC<LkhWizardProps> = ({
     const found = rekapMapelOptions.find(m => m.id === rekapMapelFilter);
     return found ? found.name : rekapMapelFilter;
   }, [rekapMapelFilter, rekapMapelOptions]);
+
+  // Ekspor Dokumen LKH PDF Resmi langsung dari Panel Rekap LKH
+  const handleExportPdfFromRekap = () => {
+    if (previewFilteredRecords.length === 0) {
+      showToast('Tidak ada data jurnal LKH untuk dicetak.', 'warning');
+      return;
+    }
+    const startNorm = rekapStartDate <= rekapEndDate ? rekapStartDate : rekapEndDate;
+    const endNorm = rekapStartDate <= rekapEndDate ? rekapEndDate : rekapStartDate;
+
+    const primaryMapel = resolvePrimaryMapelName({
+      pengajaranList,
+      references,
+      currentUser,
+      lkhRecords: previewFilteredRecords,
+    });
+
+    const filename = buildOfficialLkhFilename({
+      currentUser,
+      startDate: startNorm,
+      endDate: endNorm,
+      format: 'pdf',
+    });
+
+    try {
+      exportLkhOfficialPdf({
+        filename,
+        startDate: startNorm,
+        endDate: endNorm,
+        currentUser,
+        primaryMapelName: primaryMapel,
+        records: previewFilteredRecords,
+      });
+      showToast(`Dokumen ${filename} berhasil diunduh.`, 'success');
+    } catch {
+      showToast('Gagal membuat dokumen PDF LKH.', 'error');
+    }
+  };
 
   // Hasil Filter Data 09_LKH untuk Tabel Preview Rekap LKH (Diurutkan berdasarkan Tanggal & JamKe)
   const previewFilteredRecords = useMemo(() => {

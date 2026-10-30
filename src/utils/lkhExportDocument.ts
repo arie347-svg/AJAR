@@ -276,6 +276,70 @@ export function parseJamKeSummary(raw: any): {
  * Resolusi Nama Mata Pelajaran Utama Guru dari berbagai sumber
  * (MasterAjarData prop -> pengajaranList isUtama -> localStorage ajar_master_ajar -> fallback)
  */
+/**
+ * Ekstraksi nama panggilan guru untuk penamaan file resmi (misal: "Yuni" dari "YUNI ANGGARENI NUR, S.Pd")
+ */
+export function extractTeacherShortName(currentUser?: User | null): string {
+  if (!currentUser) return 'Guru';
+  const raw =
+    currentUser.namaTampilan ||
+    currentUser.namaLengkap ||
+    (currentUser as any)?.NamaLengkap ||
+    currentUser.username ||
+    'Guru';
+
+  const clean = String(raw)
+    .replace(/^(dr|dra|drs|h|hj|prof)\.?\s+/i, '')
+    .replace(/,\s*.*$/, '')
+    .trim();
+
+  const words = clean.split(/\s+/).filter(Boolean);
+  const firstWord = words[0] || 'Guru';
+  return firstWord.charAt(0).toUpperCase() + firstWord.slice(1).toLowerCase();
+}
+
+/**
+ * Format tanggal ringkas tanpa spasi untuk penamaan file resmi (misal: "1Okt2026")
+ */
+export function formatCompactDateId(dateStr: string): string {
+  const norm = normalizeIsoDateLkh(dateStr);
+  const m = norm.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) {
+    const year = m[1];
+    const monthIdx = parseInt(m[2], 10) - 1;
+    const day = parseInt(m[3], 10);
+    const shortMonth = SHORT_MONTH_NAMES_ID[monthIdx] || '';
+    return `${day}${shortMonth}${year}`;
+  }
+  return String(dateStr || '').replace(/\s+/g, '');
+}
+
+/**
+ * Pembuat nama file resmi LKH MAN 1 Majalengka (Contoh: LKH_Yuni_1Okt2026-31Okt2026.pdf)
+ */
+export function buildOfficialLkhFilename(params: {
+  currentUser?: User | null;
+  startDate: string;
+  endDate: string;
+  format?: 'pdf' | 'word' | 'excel';
+}): string {
+  const { currentUser, startDate, endDate, format = 'pdf' } = params;
+  const teacherName = extractTeacherShortName(currentUser);
+  const startNorm = normalizeIsoDateLkh(startDate);
+  const endNorm = normalizeIsoDateLkh(endDate) || startNorm;
+
+  const startLabel = formatCompactDateId(startNorm);
+  const endLabel = formatCompactDateId(endNorm);
+
+  const rangePart =
+    startNorm && endNorm && startNorm === endNorm
+      ? startLabel
+      : `${startLabel}-${endLabel}`;
+
+  const ext = format === 'word' ? 'doc' : format === 'excel' ? 'xlsx' : 'pdf';
+  return `LKH_${teacherName}_${rangePart}.${ext}`;
+}
+
 export function resolvePrimaryMapelName(params: {
   masterAjarData?: MasterAjarData | null;
   pengajaranList?: PengajaranItem[];
@@ -764,7 +828,7 @@ export interface OfficialLkhExportOptions {
  */
 export function exportLkhOfficialPdf(options: OfficialLkhExportOptions): void {
   const {
-    filename,
+    filename: explicitFilename,
     startDate,
     endDate,
     currentUser,
@@ -810,19 +874,38 @@ export function exportLkhOfficialPdf(options: OfficialLkhExportOptions): void {
   const atasanNip =
     (currentUser as any)?.nipAtasan || '196904242005011008';
 
+    // Gunakan paraf / TTD digital hanya jika guru benar-benar mengunggah paraf di profil
+  const rawParaf =
+    currentUser?.parafUrl ||
+    (currentUser as any)?.ParafGuruURL ||
+    '';
   const parafUrl =
+    rawParaf && String(rawParaf).trim() && !String(rawParaf).includes('FALLBACK')
+      ? String(rawParaf).trim()
+      : '';
+
+  const rawTtd =
     currentUser?.parafUrl ||
     (currentUser as any)?.ParafGuruURL ||
-    FALLBACK_PARAF_BASE64;
+    '';
   const ttdUrl =
-    currentUser?.parafUrl ||
-    (currentUser as any)?.ParafGuruURL ||
-    FALLBACK_TTD_BASE64;
+    rawTtd && String(rawTtd).trim() && !String(rawTtd).includes('FALLBACK')
+      ? String(rawTtd).trim()
+      : '';
 
   const { yearText, monthUpperText } = formatPeriodeTexts(
     startDate,
     endDate
   );
+
+  const filename =
+    explicitFilename ||
+    buildOfficialLkhFilename({
+      currentUser,
+      startDate,
+      endDate,
+      format: 'pdf',
+    });
 
   // ===========================================================================
   // HALAMAN 1: SAMPUL (COVER) LAPORAN KINERJA HARIAN (100% IDENTIK ACUAN)
@@ -1166,7 +1249,7 @@ export function exportLkhOfficialPdf(options: OfficialLkhExportOptions): void {
  */
 export function exportLkhOfficialWord(options: OfficialLkhExportOptions): void {
   const {
-    filename,
+    filename: explicitFilename,
     startDate,
     endDate,
     currentUser,
@@ -1360,7 +1443,7 @@ export function exportLkhOfficialWord(options: OfficialLkhExportOptions): void {
  */
 export function exportLkhOfficialExcel(options: OfficialLkhExportOptions): void {
   const {
-    filename,
+    filename: explicitFilename,
     startDate,
     endDate,
     currentUser,
