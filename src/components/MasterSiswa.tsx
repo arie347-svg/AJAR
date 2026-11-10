@@ -19,6 +19,7 @@ import autoTable from 'jspdf-autotable';
 import { SiswaItem, RefItem, PengajaranItem } from '../types';
 import { callGasApi } from '../services/gasApi';
 import { toProperCase, formatProperCaseLive } from '../utils/textUtils';
+import { parsePdfDataSiswa, ParsedPdfResult } from '../utils/pdfSiswaParser';
 
 interface MasterSiswaProps {
   token: string;
@@ -318,6 +319,79 @@ export const MasterSiswa: React.FC<MasterSiswaProps> = ({
   // Delete Confirmation State
   const [studentToDelete, setStudentToDelete] = useState<SiswaItem | null>(null);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // PDF Parsing & Batch Upload States
+  const [pdfParsing, setPdfParsing] = useState(false);
+  const [pdfResult, setPdfResult] = useState<ParsedPdfResult | null>(null);
+  const [showPdfPreviewModal, setShowPdfPreviewModal] = useState(false);
+  const [isUploadingBatch, setIsUploadingBatch] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Handler saat berkas PDF dipilih
+  const handlePdfFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      showToast('Hanya berkas format .pdf yang didukung.', 'warning');
+      return;
+    }
+
+    setPdfParsing(true);
+    try {
+      const res = await parsePdfDataSiswa(file);
+      if (!res.success || res.students.length === 0) {
+        showToast(res.error || 'Gagal mengekstrak data siswa dari berkas PDF.', 'error');
+        return;
+      }
+
+      setPdfResult(res);
+      setShowUploadModal(false);
+      setShowPdfPreviewModal(true);
+    } catch (err: any) {
+      showToast('Gagal memproses berkas PDF: ' + err.message, 'error');
+    } finally {
+      setPdfParsing(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  // Handler simpan batch data siswa ke database (Google Spreadsheet / Fallback)
+  const handleCommitBatchPdf = async () => {
+    if (!pdfResult || !selectedClass) return;
+    setIsUploadingBatch(true);
+
+    try {
+      const payload = pdfResult.students.map(s => ({
+        nis: s.nis,
+        nisn: s.nisn || '-',
+        namaSiswa: s.namaSiswa,
+        jk: 'L',
+      }));
+
+      const res = await callGasApi<any>('bulkUploadSiswa', [token, selectedClass, payload]);
+      if (res && res.success) {
+        showToast(res.message || `Berhasil menyimpan ${payload.length} data siswa!`, 'success');
+        setShowPdfPreviewModal(false);
+        setPdfResult(null);
+
+        // Perbarui data lokal & state kelas
+        const updatedRes = await callGasApi<any>('getMasterSiswa', [token, selectedClass]);
+        const raw = updatedRes?.data || updatedRes?.siswa || (Array.isArray(updatedRes) ? updatedRes : []);
+        const updatedList = Array.isArray(raw) ? raw.map(s => normalizeSiswa(s, selectedClass)) : [];
+        setSiswaList(updatedList);
+        localStorage.setItem('ajar_siswa_' + selectedClass, JSON.stringify(updatedList));
+        setClassCounts(prev => ({ ...prev, [selectedClass]: updatedList.length }));
+        setShowTableModal(true);
+      } else {
+        showToast(res?.message || 'Gagal menyimpan data siswa ke database.', 'error');
+      }
+    } catch (err: any) {
+      showToast('Gagal menghubungi server database: ' + err.message, 'error');
+    } finally {
+      setIsUploadingBatch(false);
+    }
+  };
 
   // 4. Handler saat kartu kelas diklik
   const handleSelectClass = async (cls: string) => {
@@ -717,7 +791,7 @@ export const MasterSiswa: React.FC<MasterSiswaProps> = ({
                   Upload Data Siswa
                 </h3>
                 <p className="text-[10px] text-slate-500 font-extrabold">
-                  Kelas {selectedClass} • Belum ada data
+                  Kelas {selectedClass} • {siswaList.length > 0 ? `${siswaList.length} Siswa Terdaftar` : 'Belum ada data'}
                 </p>
               </div>
               <button
@@ -730,21 +804,43 @@ export const MasterSiswa: React.FC<MasterSiswaProps> = ({
             </div>
 
             <div className="space-y-2.5">
-              {/* Opsi PDF (Disabled) */}
-              <div className="p-3 rounded-2xl neu-pressed bg-[#E8EEF6] border border-white/60 flex items-center justify-between opacity-60 cursor-not-allowed">
+              {/* Hidden file input untuk PDF */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,application/pdf"
+                onChange={handlePdfFileSelect}
+                className="hidden"
+              />
+
+              {/* Opsi PDF (Aktif) */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={pdfParsing}
+                className="w-full p-3 rounded-2xl neu-btn bg-[#EEF2F6] hover:bg-[#E8EEF6] border border-white/80 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all text-left shadow-xs disabled:opacity-60"
+              >
                 <div className="flex items-center space-x-2.5">
                   <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 font-black">
-                    <FileText className="w-4 h-4" />
+                    {pdfParsing ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <FileText className="w-4 h-4" />
+                    )}
                   </div>
                   <div>
-                    <p className="text-xs font-black text-slate-700">Format PDF</p>
-                    <p className="text-[10px] text-slate-500 font-semibold">Dokumen PDF Nilai/Siswa</p>
+                    <p className="text-xs font-black text-slate-700">
+                      {pdfParsing ? 'Memindai PDF...' : 'Format PDF'}
+                    </p>
+                    <p className="text-[10px] text-slate-500 font-semibold">
+                      Daftar Hadir / Absensi (.pdf)
+                    </p>
                   </div>
                 </div>
-                <span className="text-[9px] font-black text-slate-400 bg-slate-200 px-2 py-0.5 rounded-md">
-                  Segera Hadir
+                <span className="text-[9px] font-black text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-md border border-emerald-300">
+                  Pilih Berkas
                 </span>
-              </div>
+              </button>
 
               {/* Opsi Excel (Disabled) */}
               <div className="p-3 rounded-2xl neu-pressed bg-[#E8EEF6] border border-white/60 flex items-center justify-between opacity-60 cursor-not-allowed">
@@ -763,9 +859,9 @@ export const MasterSiswa: React.FC<MasterSiswaProps> = ({
               </div>
             </div>
 
-            {/* Keterangan Nonaktif */}
-            <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200/60 text-[10px] text-blue-800 font-bold text-center">
-              Fungsi upload data siswa sedang disiapkan untuk spesifikasi format data madrasah.
+            {/* Keterangan Cerdas */}
+            <div className="p-2.5 rounded-xl bg-blue-50/80 border border-blue-200/60 text-[10px] text-blue-800 font-bold leading-relaxed text-center">
+              Sistem akan otomatis memvalidasi NIS, menormalisasi nama, dan mendeteksi siswa lintas rombel.
             </div>
 
             <div className="grid grid-cols-2 gap-2 pt-1">
@@ -786,6 +882,153 @@ export const MasterSiswa: React.FC<MasterSiswaProps> = ({
                 className="py-2.5 rounded-xl neu-flat text-slate-600 text-xs font-bold cursor-pointer active:scale-95 text-center"
               >
                 Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 3B. MODAL PRATINJAU HASIL EKSTRAKSI PDF */}
+      {/* ========================================================================= */}
+      {showPdfPreviewModal && pdfResult && selectedClass && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-150"
+          onClick={() => {
+            if (!isUploadingBatch) {
+              setShowPdfPreviewModal(false);
+              setPdfResult(null);
+            }
+          }}
+        >
+          <div
+            className="neu-raised-card bg-[#EEF2F6] max-w-lg w-full p-4 sm:p-5 rounded-[26px] relative border border-white/90 shadow-2xl animate-in zoom-in-95 duration-150 space-y-3.5 max-h-[90vh] flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header Pratinjau */}
+            <div className="flex items-center justify-between border-b border-[#d4deeb] pb-2.5 shrink-0">
+              <div>
+                <h3 className="text-sm font-black text-[#0D162B] flex items-center gap-2">
+                  <span>Pratinjau Data Siswa (PDF)</span>
+                  <span className="text-[10px] font-extrabold text-blue-700 bg-blue-100/90 px-2 py-0.5 rounded-full border border-blue-200">
+                    {pdfResult.totalStudents} Siswa
+                  </span>
+                </h3>
+                <p className="text-[10px] text-slate-500 font-semibold mt-0.5 flex items-center gap-1.5 flex-wrap">
+                  <span>Target: <strong className="text-slate-800">Kelas {selectedClass}</strong></span>
+                  {pdfResult.detectedKelas && (
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-black ${
+                      pdfResult.detectedKelas === selectedClass
+                        ? 'text-emerald-700 bg-emerald-100 border border-emerald-300'
+                        : 'text-amber-700 bg-amber-100 border border-amber-300'
+                    }`}>
+                      Dokumen: {pdfResult.detectedKelas}
+                    </span>
+                  )}
+                  {pdfResult.detectedMapel && (
+                    <span className="text-[9px] text-slate-500 bg-slate-200/80 px-1.5 py-0.5 rounded">
+                      Mapel: {pdfResult.detectedMapel}
+                    </span>
+                  )}
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={isUploadingBatch}
+                onClick={() => {
+                  setShowPdfPreviewModal(false);
+                  setPdfResult(null);
+                }}
+                className="p-1.5 rounded-xl neu-flat active:neu-pressed text-slate-500 hover:text-slate-800 cursor-pointer disabled:opacity-50"
+              >
+                <X className="w-4 h-4 stroke-[2.5]" />
+              </button>
+            </div>
+
+            {/* Banner info deteksi siswa lintas rombel */}
+            {pdfResult.students.some(s => s.isLintasRombel) && (
+              <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200/80 text-[10px] text-amber-900 font-semibold flex items-start gap-2 shrink-0">
+                <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                <span>
+                  Terdeteksi <strong>{pdfResult.students.filter(s => s.isLintasRombel).length} siswa lintas rombel</strong> (misal dari XI.10). Nama mereka dibersihkan dan otomatis ditautkan ke rombel pembelajaran ini.
+                </span>
+              </div>
+            )}
+
+            {/* Tabel Pratinjau Siswa */}
+            <div className="overflow-hidden rounded-xl neu-inset bg-[#E8EEF6] border border-white/60 flex-1 min-h-[220px] max-h-[360px] flex flex-col">
+              <div className="overflow-y-auto p-1.5">
+                <table className="w-full text-left">
+                  <thead className="sticky top-0 bg-[#E8EEF6] shadow-xs z-10 text-[11px] font-bold text-slate-500 border-b border-slate-300/70">
+                    <tr>
+                      <th className="py-1 px-2 w-8 text-center">No</th>
+                      <th className="py-1 px-2 w-20">NIS</th>
+                      <th className="py-1 px-2">Nama Murid</th>
+                      <th className="py-1 px-2 text-right">Rombel</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200/60 font-medium text-slate-800 text-[11px]">
+                    {pdfResult.students.map((s, idx) => (
+                      <tr key={s.nis || idx} className="hover:bg-white/40 transition-colors">
+                        <td className="py-1.5 px-2 text-center text-slate-400 font-mono text-[10px]">
+                          {s.noUrut || idx + 1}
+                        </td>
+                        <td className="py-1.5 px-2 font-mono tabular-nums text-slate-700 font-semibold">
+                          {s.nis}
+                        </td>
+                        <td className="py-1.5 px-2 truncate max-w-[200px]" title={s.namaSiswa}>
+                          {s.namaSiswa}
+                        </td>
+                        <td className="py-1.5 px-2 text-right">
+                          {s.isLintasRombel && s.kelasAsal ? (
+                            <span className="text-[9px] font-black text-amber-800 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded">
+                              Lintas {s.kelasAsal}
+                            </span>
+                          ) : (
+                            <span className="text-[9px] font-bold text-slate-500">
+                              Reguler
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Aksi Konfirmasi */}
+            <div className="grid grid-cols-2 gap-2 pt-1 shrink-0">
+              <button
+                type="button"
+                disabled={isUploadingBatch}
+                onClick={() => {
+                  setShowPdfPreviewModal(false);
+                  setPdfResult(null);
+                }}
+                className="py-2.5 rounded-xl neu-flat text-slate-600 text-xs font-bold cursor-pointer active:scale-95 text-center disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={isUploadingBatch}
+                onClick={handleCommitBatchPdf}
+                className="py-2.5 rounded-xl neu-btn bg-[#EEF2F6] text-blue-700 text-xs font-black cursor-pointer active:scale-95 text-center flex items-center justify-center gap-1.5 disabled:opacity-50 shadow-sm"
+              >
+                {isUploadingBatch ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Menyimpan...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                    <span>Simpan ke Database ({pdfResult.totalStudents} Siswa)</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -830,6 +1073,17 @@ export const MasterSiswa: React.FC<MasterSiswaProps> = ({
                   >
                     <Plus className="w-3.5 h-3.5 stroke-[3]" />
                     <span>Tambah</span>
+                  </button>
+
+                  {/* Tombol Upload PDF */}
+                  <button
+                    type="button"
+                    onClick={() => setShowUploadModal(true)}
+                    className="py-1.5 px-3 rounded-xl neu-btn bg-[#EEF2F6] text-rose-700 hover:text-rose-800 text-xs font-black flex items-center gap-1 cursor-pointer active:scale-95 transition-all shadow-xs"
+                    title="Upload Data Siswa dari Berkas PDF"
+                  >
+                    <FileText className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>Upload PDF</span>
                   </button>
 
                   {/* Tombol Edit Mode */}

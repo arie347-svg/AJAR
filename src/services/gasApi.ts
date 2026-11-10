@@ -996,6 +996,55 @@ function handleLocalFallback<T>(action: string, args: any[]): T {
     return { success: true, message: 'Data siswa berhasil disimpan!' } as unknown as T;
   }
 
+  if (action === 'bulkUploadSiswa') {
+    const kelas = args[1] || 'XI.1';
+    const listSiswa: Array<{ nis?: string; nisn?: string; namaSiswa?: string; nama?: string; jk?: string }> = args[2] || [];
+    const res = handleLocalFallback<{ success: boolean; data?: SiswaItem[]; siswa?: SiswaItem[] }>('getMasterSiswa', ['', kelas]);
+    const currentList = res.data || res.siswa || [];
+    let inserted = 0;
+    let updated = 0;
+
+    listSiswa.forEach(item => {
+      const inputNis = String(item.nis || '').trim();
+      const inputNama = String(item.namaSiswa || item.nama || '').trim();
+      if (!inputNama) return;
+
+      const existingIdx = currentList.findIndex(s => {
+        const sNis = String(s.NIS || s.nis || '').trim();
+        const sNama = String(s.NamaSiswa || s.namaSiswa || s.nama || '').trim().toLowerCase();
+        if (inputNis && sNis && inputNis === sNis) return true;
+        if (sNama && sNama === inputNama.toLowerCase()) return true;
+        return false;
+      });
+
+      if (existingIdx !== -1) {
+        currentList[existingIdx] = {
+          ...currentList[existingIdx],
+          NamaSiswa: inputNama,
+          NIS: inputNis || currentList[existingIdx].NIS || currentList[existingIdx].nis,
+        };
+        updated++;
+      } else {
+        currentList.push({
+          SiswaID: 'SISWA-' + Math.random().toString(36).substring(2, 10).toUpperCase(),
+          NIS: inputNis || String(250000 + currentList.length + 1),
+          nisn: item.nisn || '-',
+          NamaSiswa: inputNama,
+          Kelas: kelas,
+          JenisKelamin: item.jk || 'L',
+          Status: 'ACTIVE',
+        });
+        inserted++;
+      }
+    });
+
+    localStorage.setItem('ajar_siswa_' + kelas, JSON.stringify(currentList));
+    return {
+      success: true,
+      message: `Upload berhasil! ${inserted} siswa baru ditambahkan, ${updated} siswa diperbarui.`
+    } as unknown as T;
+  }
+
   if (action === 'deleteSiswa') {
     const sId = args[1];
     return { success: true, message: 'Data siswa berhasil dihapus!' } as unknown as T;

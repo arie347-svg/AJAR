@@ -1299,6 +1299,7 @@ export function exportLkhOfficialWord(options: OfficialLkhExportOptions): void {
   );
   const exportRows = buildLkhExportRows(records);
   const tanggalTtd = formatLongDateId(endDate || startDate);
+  const filename = explicitFilename || buildOfficialLkhFilename({ currentUser, startDate, endDate, format: 'word' });
 
   let rowsHtml = '';
   if (exportRows.length === 0) {
@@ -1484,6 +1485,7 @@ export function exportLkhOfficialExcel(options: OfficialLkhExportOptions): void 
   );
   const tanggalTtd = formatLongDateId(endDate || startDate);
   const exportRows = buildLkhExportRows(records);
+  const filename = explicitFilename || buildOfficialLkhFilename({ currentUser, startDate, endDate, format: 'excel' });
 
   const wb = XLSX.utils.book_new();
 
